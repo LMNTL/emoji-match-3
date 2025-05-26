@@ -1,0 +1,32 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.grid {
+  display: grid;
+  gap: 2em;
+  grid-template-columns: repeat(5, 10% [col-start]);
+}
+
+.card {
+  cursor: pointer;
+}
+
+.selected {
+  background-color: yellow;
+}
+
+.delete {
+  background-color: red;
+}
+
+.read-the-docs {
+  color: #888;
+}
