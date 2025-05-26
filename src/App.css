@@ -11,12 +11,21 @@
 
 .grid {
   display: grid;
-  gap: 2em;
-  grid-template-columns: repeat(5, 10% [col-start]);
+  gap: 1em;
+  justify-content: center;
+  margin: 2em auto;
+  max-width: 500px;
 }
 
 .card {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  transition: all 0.3s ease; /* Base transition for animations */
 }
 
 .selected {
@@ -25,6 +34,134 @@
 
 .delete {
   background-color: red;
+}
+
+.noMatch {
+  animation-duration: 1s;
+  animation-direction: alternate;
+  animation-iteration-count: 2;
+}
+
+.animated {
+  animation-duration: 500ms;
+  animation-timing-function: ease-in;
+}
+
+.animated.up {
+  animation-name: up;
+}
+
+@keyframes up {
+  from {
+    transform: translateY(0%);
+  }
+
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+.animated.up-right {
+  animation-name: up-right;
+}
+
+@keyframes up-right {
+  from {
+    transform: translate(0%, 0%);
+  }
+
+  to {
+    transform: translate(100%, -100%);
+  }
+}
+
+.animated.right {
+  animation-name: right;
+}
+
+@keyframes right {
+  from {
+    transform: translateX(0%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animated.down-right {
+  animation-name: down-right;
+}
+
+@keyframes down-right {
+  from {
+    transform: translate(0%, 0%);
+  }
+
+  to {
+    transform: translate(100%, 100%);
+  }
+}
+
+.animated.down {
+  animation-name: down;
+}
+
+@keyframes down {
+  from {
+    transform: translateY(0%);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.animated.down-left {
+  animation-name: down-left;
+}
+
+@keyframes down-left {
+  from {
+    transform: translate(0%, 0%);
+  }
+
+  to {
+    transform: translate(-100%, 100%);
+  }
+}
+
+.animated.left {
+  animation-name: left;
+}
+
+@keyframes left {
+  from {
+    transform: translateX(0%);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.animated.up-left {
+  animation-name: up-left;
+}
+
+@keyframes up-left {
+  from {
+    transform: translate(0%, 0%);
+  }
+
+  to {
+    transform: translate(-100%, -100%);
+  }
+}
+
+.score {
+  font-size: 1.5em;
+  margin: 1em 0;
 }
 
 .read-the-docs {
