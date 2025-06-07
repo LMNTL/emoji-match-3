@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import {Suspense, useEffect, useState} from 'react'
 import './App.css'
 import {clsx} from "clsx";
+import Grid from './grid.js';
 
 const emojiMap = [
-    '❤️', '🌳', '😎', '🍆'
+    '❤️', '🌳', '😎', '🍆', '🐇'
 ];
 
-const randInRange = (max) => {
-    return Math.floor(Math.random() * max);
+const randInMap = () => {
+    return Math.floor(Math.random() * emojiMap.length);
 }
 
 const DIRECTIONS = {
@@ -22,13 +23,15 @@ const DIRECTIONS = {
 };
 
 function App({length}) {
+  const [isLoading, setIsLoading] = useState(true);
   const [grid, setGrid] = useState(
-      Array.from({ length }, () => Array.from({ length }, () => randInRange(emojiMap.length)))
+      new Grid(length, length, randInMap)
   );
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState('');
+  const [isGridBlocked, setIsGridBlocked] = useState(true);
   const [toDelete, setToDelete] = useState([]);
-  const [swappingCells, setSwappingCells] = useState([]); // For animation tracking
+  const [swappingCells, setSwappingCells] = useState([null, null]); // For animation tracking
 
   const findMatches = (matchGrid) => {
       const matches = [];
@@ -38,15 +41,15 @@ function App({length}) {
           let last = null;
           let count = 0;
           const lineMatches = [];
-          cells.forEach(({value, pos}, index) => {
-              if (value === last) {
+          cells.forEach(({val, x, y}, index) => {
+              if (val === last) {
                   count++;
               } else {
                   if (count >= 3) {
                       // Add the matched positions (last 'count' items)
-                      lineMatches.push(...cells.slice(index-count, index).map(c => c.pos));
+                      lineMatches.push(...cells.slice(index-count, index).map(c => `${c.x},${c.y}`));
                   }
-                  last = value;
+                  last = val;
                   count = 1;
               }
           });
@@ -58,14 +61,14 @@ function App({length}) {
       };
 
       // Horizontal (rows)
-      for (let y = 0; y < length; y++) {
-          const row = matchGrid[y].map((value, x) => ({value, pos: `${x},${y}`}));
+      for (let x = 0; x < length; x++) {
+          const row = matchGrid.getRow(x);
           matches.push(...checkLine(row));
       }
 
       // Vertical (columns)
-      for (let x = 0; x < length; x++) {
-          const col = matchGrid.map((row, y) => ({value: row[x], pos: `${x},${y}`}));
+      for (let y = 0; y < length; y++) {
+          const col = matchGrid.getCol(y);
           matches.push(...checkLine(col));
       }
 
@@ -76,7 +79,7 @@ function App({length}) {
               for (let i = 0; startY + i < length && startX + i < length; i++) {
                   const y = startY + i;
                   const x = startX + i;
-                  diagonal.push({value: matchGrid[y][x], pos: `${x},${y}`});
+                  diagonal.push({val: matchGrid.get(x, y), x, y});
               }
               if (diagonal.length >= 3) {
                   matches.push(...checkLine(diagonal));
@@ -91,7 +94,7 @@ function App({length}) {
               for (let i = 0; startY + i < length && startX - i >= 0; i++) {
                   const y = startY + i;
                   const x = startX - i;
-                  diagonal.push({value: matchGrid[y][x], pos: `${x},${y}`});
+                  diagonal.push({val: matchGrid.get(x, y), x, y});
               }
               if (diagonal.length >= 3) {
                   matches.push(...checkLine(diagonal));
@@ -103,16 +106,38 @@ function App({length}) {
       return [...new Set(matches)];
   };
 
+  useEffect(() => {
+      let matches = [];
+      let tempGrid = grid.clone();
+      matches = findMatches(tempGrid);
+      while(matches.length){
+        tempGrid = new Grid(length, length, randInMap);
+        matches = findMatches(tempGrid);
+      }
+      setGrid(tempGrid);
+      setIsLoading(false);
+      setIsGridBlocked(false);
+  }, []);
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
 
   const startSwitch = async (x1, y1, x2, y2) => {
       // Perform the swap on a new grid
-      const newGrid = grid.map(row => [...row]);
-      const temp = newGrid[y1][x1];
-      newGrid[y1][x1] = newGrid[y2][x2];
-      newGrid[y2][x2] = temp;
+      setIsGridBlocked(true);
+      setSwappingCells([
+          {[`${x1},${y1}`]: getSwapDirection(x1, y1, x2, y2)},
+          {[`${x2},${y2}`]: getSwapDirection(x2, y2, x1, y1)},
+      ])
+      const newGrid = grid.clone();
+      newGrid.swap(x1, y1, x2, y2);
 
       // Check for matches after swap
       const matches = findMatches(newGrid);
+      await sleep(500);
+      setSwappingCells([null, null]);
       if (matches.length > 0) {
           setGrid(newGrid);
           setToDelete(matches);
@@ -143,6 +168,7 @@ function App({length}) {
 
   const clickCell = (event) => {
       event.stopPropagation();
+      if(isGridBlocked) return;
       const x = parseInt(event.target.dataset.x);
       const y = parseInt(event.target.dataset.y);
       const pos = `${x},${y}`;
@@ -169,29 +195,33 @@ function App({length}) {
   return (
       <div className='page' onClick={clearSelection}>
           <div className='score'>Score: {score}</div>
-          <div className='grid' style={{grid: `repeat(${length}, 1fr) / repeat(${length}, 1fr)`}}>
-              {grid.map((row, y) => row.map((cell, x) => {
-                  const pos = `${x},${y}`;
-                  return (
-                      <span
-                          key={pos}
-                          className={clsx(
-                              'card',
-                              {
-                                  'selected': selected === pos,
-                                  'delete': toDelete.includes(pos),
-                                  'swapping': swappingCells.includes(pos)
-                              }
-                          )}
-                          onClick={clickCell}
-                          data-x={x}
-                          data-y={y}
-                      >
-                          {emojiMap[cell]}
-                      </span>
-                  );
-              }))}
-          </div>
+          {isLoading ? <div className='loader'/> :
+              <div className='grid' style={{grid: `repeat(${length}, 1fr) / repeat(${length}, 1fr)`}}>
+                  {grid.map((x, y, val) => {
+                      const pos = `${x},${y}`;
+                      const swapDir = swappingCells.find(el => el?.[pos])?.dir ?? '';
+                      return (
+                          <span
+                              key={pos}
+                              className={clsx(
+                                  'card',
+                                  swapDir,
+                                  {
+                                      'selected': selected === pos,
+                                      'delete': toDelete.includes(pos),
+                                      'swapping': swappingCells.includes(el => el?.[pos])
+                                  }
+                              )}
+                              onClick={clickCell}
+                              data-x={x}
+                              data-y={y}
+                          >
+                              {emojiMap[val]}
+                          </span>
+                      );
+                  })}
+              </div>
+          }
       </div>
   );
 }
