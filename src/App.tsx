@@ -1,4 +1,4 @@
-import {Suspense, useEffect, useState} from 'react'
+import {useEffect, useState} from 'react'
 import './App.css'
 import {clsx} from "clsx";
 import Grid from './grid.js';
@@ -33,86 +33,15 @@ function App({length}) {
   const [toDelete, setToDelete] = useState([]);
   const [swappingCells, setSwappingCells] = useState([null, null]); // For animation tracking
 
-  const findMatches = (matchGrid) => {
-      const matches = [];
-
-      // Helper to check a line (row, column, or diagonal) for matches
-      const checkLine = (cells) => {
-          let last = null;
-          let count = 0;
-          const lineMatches = [];
-          cells.forEach(({val, x, y}, index) => {
-              if (val === last) {
-                  count++;
-              } else {
-                  if (count >= 3) {
-                      // Add the matched positions (last 'count' items)
-                      lineMatches.push(...cells.slice(index-count, index).map(c => `${c.x},${c.y}`));
-                  }
-                  last = val;
-                  count = 1;
-              }
-          });
-          // Check for matches at the end of the line
-          if (count >= 3) {
-              lineMatches.push(...cells.slice(-count).map(c => c.pos));
-          }
-          return lineMatches;
-      };
-
-      // Horizontal (rows)
-      for (let x = 0; x < length; x++) {
-          const row = matchGrid.getRow(x);
-          matches.push(...checkLine(row));
-      }
-
-      // Vertical (columns)
-      for (let y = 0; y < length; y++) {
-          const col = matchGrid.getCol(y);
-          matches.push(...checkLine(col));
-      }
-
-      // Diagonals (top-left to bottom-right)
-      for (let startY = 0; startY < length; startY++) {
-          for (let startX = 0; startX < length; startX++) {
-              const diagonal = [];
-              for (let i = 0; startY + i < length && startX + i < length; i++) {
-                  const y = startY + i;
-                  const x = startX + i;
-                  diagonal.push({val: matchGrid.get(x, y), x, y});
-              }
-              if (diagonal.length >= 3) {
-                  matches.push(...checkLine(diagonal));
-              }
-          }
-      }
-
-      // Diagonals (top-right to bottom-left)
-      for (let startY = 0; startY < length; startY++) {
-          for (let startX = length - 1; startX >= 0; startX--) {
-              const diagonal = [];
-              for (let i = 0; startY + i < length && startX - i >= 0; i++) {
-                  const y = startY + i;
-                  const x = startX - i;
-                  diagonal.push({val: matchGrid.get(x, y), x, y});
-              }
-              if (diagonal.length >= 3) {
-                  matches.push(...checkLine(diagonal));
-              }
-          }
-      }
-
-      // Remove duplicates (in case of overlapping matches)
-      return [...new Set(matches)];
-  };
+  // findMatches has been moved to Grid class
 
   useEffect(() => {
       let matches = [];
       let tempGrid = grid.clone();
-      matches = findMatches(tempGrid);
+      matches = tempGrid.findMatches();
       while(matches.length){
         tempGrid = new Grid(length, length, randInMap);
-        matches = findMatches(tempGrid);
+        matches = tempGrid.findMatches();
       }
       setGrid(tempGrid);
       setIsLoading(false);
@@ -122,7 +51,6 @@ function App({length}) {
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
 
   const startSwitch = async (x1, y1, x2, y2) => {
       // Perform the swap on a new grid
@@ -135,15 +63,52 @@ function App({length}) {
       newGrid.swap(x1, y1, x2, y2);
 
       // Check for matches after swap
-      const matches = findMatches(newGrid);
+      const matches = newGrid.findMatches();
       await sleep(500);
       setSwappingCells([null, null]);
       if (matches.length > 0) {
           setGrid(newGrid);
           setToDelete(matches);
+
+          // Process matches and apply gravity
+          await processMatches(newGrid, matches);
+      } else {
+          // Swap back if no matches
+          newGrid.swap(x1, y1, x2, y2);
+          setGrid(newGrid);
+      }
+  };
+
+  const processMatches = async (currentGrid, matches) => {
+      if (matches.length === 0) {
+          setIsGridBlocked(false);
+          return;
       }
 
       clearSelection();
+
+      // Null out matched cells
+      await sleep(500);
+      currentGrid.nullOutMatches(matches);
+      setGrid(currentGrid.clone());
+      setToDelete([]);
+
+      // Apply gravity step by step
+      let stillMoving = true;
+      while (stillMoving) {
+          await sleep(200);
+          stillMoving = currentGrid.applyGravity(randInMap);
+          setGrid(currentGrid.clone());
+      }
+
+      // Check for new matches after gravity
+      const newMatches = currentGrid.findMatches();
+      if (newMatches.length > 0) {
+          setToDelete(newMatches);
+          await processMatches(currentGrid, newMatches);
+      } else {
+          setIsGridBlocked(false);
+      }
   };
 
   const getSwapDirection = (x1: number, y1: number, x2: number, y2: number) => {
