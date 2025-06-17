@@ -50,6 +50,10 @@ export default class Grid {
     return this.grid[x][y];
   };
 
+  getWidth = () => this.width;
+
+  getLength = () => this.length;
+
   getRow = (x: number) => {
     return this.grid[x].map((el, y) => {
       return { x, y, val: el };
@@ -160,28 +164,27 @@ export default class Grid {
     return this;
   };
 
-  applyGravity = (randomValueGenerator) => {
+  applyGravity = () => {
     let moved = false;
 
-    // Move cells down one step at a time
-    for (let y = this.length - 2; y >= 0; y--) {
-      for (let x = 0; x < this.width; x++) {
-        if (this.get(x, y) !== null && this.get(x, y + 1) === null) {
-          this.swap(x, y, x, y + 1);
-          moved = true;
+    // Move cells down column by column
+    for (let x = 0; x < this.width; x++) {
+      // Collect all non-null values in this column
+      const nonNullValues = [];
+      for (let y = 0; y < this.length; y++) {
+        const val = this.get(x, y);
+        if (val !== null) {
+          nonNullValues.push(val);
         }
       }
-    }
 
-    // Fill empty cells at the top with new values
-    for (let x = 0; x < this.width; x++) {
-      if (this.get(x, 0) === null) {
-        const currentMatches = this.findMatches().length;
-        do {
-          this.set(x, 0, randomValueGenerator());
-        } while (this.findMatches().length > currentMatches);
-
-        moved = true;
+      // Fill column from bottom up with existing values
+      for (let y = this.length - 1; y >= 0; y--) {
+        const newVal = nonNullValues.pop() || null;
+        if (this.get(x, y) !== newVal) {
+          this.set(x, y, newVal);
+          moved = true;
+        }
       }
     }
 
@@ -189,12 +192,67 @@ export default class Grid {
   };
 
   applyFullGravity = (randomValueGenerator) => {
-    let moved;
-    do {
-      moved = this.applyGravity(randomValueGenerator);
-    } while (moved);
+    // First apply gravity to existing pieces
+    this.applyGravity();
+
+    // Then fill empty cells from top, ensuring no matches
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.length; y++) {
+        if (this.get(x, y) === null) {
+          let attempts = 0;
+          let newValue;
+
+          do {
+            newValue = randomValueGenerator();
+            this.set(x, y, newValue);
+            attempts++;
+
+            // Prevent infinite loops
+            if (attempts > 100) {
+              break;
+            }
+          } while (this.wouldCreateMatch(x, y, newValue));
+        }
+      }
+    }
 
     return this;
+  };
+
+  // Helper method to check if placing a value would create a match
+  private wouldCreateMatch = (x: number, y: number, value: number): boolean => {
+    const originalValue = this.get(x, y);
+    this.set(x, y, value);
+
+    // Check horizontal line
+    const row = this.getRow(x);
+    const horizontalMatches = Grid.checkLine(row);
+
+    // Check vertical line
+    const col = this.getCol(y);
+    const verticalMatches = Grid.checkLine(col);
+
+    // Check diagonals that pass through this cell
+    const diag1 = this.getDiagonal(x - Math.min(x, y), y - Math.min(x, y));
+    const diag1Matches = diag1.length >= 3 ? Grid.checkLine(diag1) : [];
+
+    const diag2 = this.getDiagonal(
+      x + Math.min(this.width - 1 - x, y),
+      y - Math.min(this.width - 1 - x, y),
+      true,
+    );
+    const diag2Matches = diag2.length >= 3 ? Grid.checkLine(diag2) : [];
+
+    // Restore original value
+    this.set(x, y, originalValue);
+
+    const cellCoord = `${x},${y}`;
+    return (
+      horizontalMatches.includes(cellCoord) ||
+      verticalMatches.includes(cellCoord) ||
+      diag1Matches.includes(cellCoord) ||
+      diag2Matches.includes(cellCoord)
+    );
   };
 
   swap = (x1, y1, x2, y2) => {

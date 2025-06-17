@@ -65,6 +65,24 @@
 
 .delete {
   background-color: red;
+  animation: bubble-pop 0.8s ease-out forwards;
+}
+
+@keyframes bubble-pop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    background-color: #ff6b6b;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+    background-color: transparent;
+  }
 }
 
 .noMatch {
@@ -198,3 +216,4 @@
 .read-the-docs {
   color: #888;
 }
+

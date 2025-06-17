@@ -6,4 +6,4 @@ then
 
 `npm run dev`
 
-To play, click an emoji, then click an adjacent emoji to switch them. Removing matched emojis not implemented yet.
+To play, click an emoji, then click an adjacent emoji to switch them.
