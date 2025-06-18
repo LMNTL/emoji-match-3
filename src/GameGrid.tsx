@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { clsx } from "clsx";
 import type Grid from "./grid.ts";
-import { emojiMap, randInMap } from "./App.tsx";
+import { emojiMap, randInMap, WILDCARD_INDEX } from "./App.tsx";
 
 const DIRECTIONS = {
   UP: "up",
@@ -35,6 +35,7 @@ const GameGrid: React.FC<GameGridProps> = ({
 }) => {
   const [toDelete, setToDelete] = useState([]);
   const [swappingCells, setSwappingCells] = useState([null, null]);
+  const [fallingCells, setFallingCells] = useState(new Set());
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -75,7 +76,14 @@ const GameGrid: React.FC<GameGridProps> = ({
     }
 
     setSelected("");
-    addScore(matches.length * 10);
+    // Wildcard bonus: if matches include wildcards, give bonus points
+    const wildcardCount = matches.filter((pos) => {
+      const [x, y] = pos.split(",").map(Number);
+      return currentGrid.get(x, y) === WILDCARD_INDEX;
+    }).length;
+    const baseScore = matches.length * 10;
+    const bonusScore = wildcardCount * 20; // Extra points for wildcards
+    addScore(baseScore + bonusScore);
 
     // Show bubble pop animation
     setToDelete(matches);
@@ -83,8 +91,23 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     // Null out matched cells
     currentGrid.nullOutMatches(matches);
+
+    // Track which cells will be falling
+    const newFallingCells = new Set();
+    currentGrid.map((x, y, val) => {
+      if (val === null) {
+        // Mark cells above as falling
+        for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
+          if (currentGrid.get(x, aboveY) !== null) {
+            newFallingCells.add(`${x},${aboveY}`);
+          }
+        }
+      }
+    });
+
     setGrid(currentGrid.clone());
     setToDelete([]);
+    setFallingCells(newFallingCells);
 
     // Apply gravity step by step
     let stillMoving = true;
@@ -94,9 +117,22 @@ const GameGrid: React.FC<GameGridProps> = ({
       setGrid(currentGrid.clone());
     }
 
-    // Fill empty cells without creating matches
+    // Fill empty cells without creating matches - these should fall from above
+    const emptyPositions = [];
+    currentGrid.map((x, y, val) => {
+      if (val === null) {
+        emptyPositions.push(`${x},${y}`);
+      }
+    });
+
+    if (emptyPositions.length > 0) {
+      setFallingCells(new Set(emptyPositions));
+      await sleep(200); // Show falling animation
+    }
+
     currentGrid.applyFullGravity(randInMap);
     setGrid(currentGrid.clone());
+    setFallingCells(new Set());
 
     // Check for new matches after gravity
     const newMatches = currentGrid.findMatches();
@@ -128,7 +164,7 @@ const GameGrid: React.FC<GameGridProps> = ({
     }
   };
 
-  const clickCell = (event) => {
+  const clickCell = async (event) => {
     event.stopPropagation();
     if (isGridBlocked) return;
     const x = parseInt(event.target.dataset.x);
@@ -176,6 +212,8 @@ const GameGrid: React.FC<GameGridProps> = ({
               delete: toDelete.includes(pos),
               swapping: swapDir !== "",
               animated: swapDir !== "",
+              falling: fallingCells.has(pos),
+              wildcard: val === WILDCARD_INDEX, // Special styling for wildcards
               [swapDir]: swapDir !== "",
             })}
             onClick={clickCell}

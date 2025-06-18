@@ -2,11 +2,17 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Grid from "./grid.js";
 import GameGrid from "./GameGrid";
+import ScoreDisplay from "./ScoreDisplay";
 
-export const emojiMap = ["❤️", "👾", "😎", "🍆", "💩", "👽"];
+export const emojiMap = ["❤️", "👾", "😎", "🍆", "💩", "👽", "🌟"]; // Added wildcard star
+
+export const WILDCARD_INDEX = 6; // Index of the wildcard emoji
 
 export const randInMap = () => {
-  return Math.floor(Math.random() * emojiMap.length);
+  // Reduce wildcard probability to make it special (10% chance)
+  return Math.random() < 0.1
+    ? WILDCARD_INDEX
+    : Math.floor(Math.random() * (emojiMap.length - 1));
 };
 
 function App({ length }) {
@@ -17,16 +23,19 @@ function App({ length }) {
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
-    let matches = [];
-    let tempGrid = grid.clone();
-    matches = tempGrid.findMatches();
-    while (matches.length) {
-      tempGrid = new Grid(length, length, randInMap);
+    const setUpGrid = async () => {
+      let matches = [];
+      let tempGrid = grid.clone();
       matches = tempGrid.findMatches();
-    }
-    setGrid(tempGrid);
-    setIsLoading(false);
-    setIsGridBlocked(false);
+      while (matches.length) {
+        tempGrid = new Grid(length, length, randInMap);
+        matches = tempGrid.findMatches();
+      }
+      setGrid(tempGrid);
+      setIsLoading(false);
+      setIsGridBlocked(false);
+    };
+    setUpGrid();
   }, []);
 
   const addScore = (addedScore) => {
@@ -39,19 +48,21 @@ function App({ length }) {
 
   return (
     <div className="page" onClick={clearSelection}>
-      <div className="score">Score: {score}</div>
       {isLoading ? (
         <div className="loader" />
       ) : (
-        <GameGrid
-          grid={grid}
-          setGrid={setGrid}
-          isGridBlocked={isGridBlocked}
-          setIsGridBlocked={setIsGridBlocked}
-          addScore={addScore}
-          selected={selected}
-          setSelected={setSelected}
-        />
+        <>
+          <ScoreDisplay score={score} />
+          <GameGrid
+            grid={grid}
+            setGrid={setGrid}
+            isGridBlocked={isGridBlocked}
+            setIsGridBlocked={setIsGridBlocked}
+            addScore={addScore}
+            selected={selected}
+            setSelected={setSelected}
+          />
+        </>
       )}
     </div>
   );

@@ -1,3 +1,5 @@
+import { WILDCARD_INDEX } from "./App.tsx";
+
 export default class Grid {
   private readonly width: number;
   private readonly length: number;
@@ -96,9 +98,20 @@ export default class Grid {
     let last: number | null = null;
     let count = 0;
     const lineMatches = [];
-    cells.forEach(({ val, x, y }, index) => {
-      if (val === last) {
-        count++;
+
+    cells.forEach(({ val }, index) => {
+      // Wildcard matches with any non-null value
+      const isWildcard = val === WILDCARD_INDEX;
+      const lastIsWildcard = last === WILDCARD_INDEX;
+      const valuesMatch = val === last || isWildcard || lastIsWildcard;
+
+      if (val !== null && (valuesMatch || count === 0)) {
+        if (count === 0) {
+          last = val;
+          count = 1;
+        } else {
+          count++;
+        }
       } else {
         if (count >= 3) {
           // Add the matched positions (last 'count' items)
@@ -107,9 +120,10 @@ export default class Grid {
           );
         }
         last = val;
-        count = 1;
+        count = val !== null ? 1 : 0;
       }
     });
+
     // Check for matches at the end of the line
     if (count >= 3) {
       lineMatches.push(...cells.slice(-count).map((c) => `${c.x},${c.y}`));
