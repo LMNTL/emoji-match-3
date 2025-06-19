@@ -1,0 +1,44 @@
+.stage-display {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  margin: 1rem 10rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stage-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.4em;
+}
+
+.stage-info p {
+  margin: 0;
+  opacity: 0.9;
+  font-style: italic;
+}
+
+.progress-container {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #4CAF50, #45a049);
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 0.9em;
+  opacity: 0.9;
+}

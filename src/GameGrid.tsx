@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { clsx } from "clsx";
 import type Grid from "./grid.ts";
 import { emojiMap, randInMap, WILDCARD_INDEX } from "./App.tsx";
+import "./GameGrid.css";
 
 const DIRECTIONS = {
   UP: "up",
@@ -36,35 +37,41 @@ const GameGrid: React.FC<GameGridProps> = ({
   const [toDelete, setToDelete] = useState([]);
   const [swappingCells, setSwappingCells] = useState([null, null]);
   const [fallingCells, setFallingCells] = useState(new Set());
+  const [invalidSwap, setInvalidSwap] = useState([null, null]); // New state for invalid swaps
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   const startSwitch = async (x1, y1, x2, y2) => {
-    // Perform the swap on a new grid
     setIsGridBlocked(true);
+
+    // First animation: swap
     setSwappingCells([
       { [`${x1},${y1}`]: getSwapDirection(x1, y1, x2, y2) },
       { [`${x2},${y2}`]: getSwapDirection(x2, y2, x1, y1) },
     ]);
+
     const newGrid = grid.clone();
     newGrid.swap(x1, y1, x2, y2);
-
-    // Check for matches after swap
     const matches = newGrid.findMatches();
-    await sleep(500);
-    setSwappingCells([null, null]);
+
     if (matches.length > 0) {
+      await sleep(500);
+      setSwappingCells([null, null]);
       setGrid(newGrid);
       setToDelete(matches);
-
-      // Process matches and apply gravity
       await processMatches(newGrid, matches);
     } else {
-      // Swap back if no matches
-      newGrid.swap(x1, y1, x2, y2);
-      setGrid(newGrid);
+      // Invalid swap - show reverse animation
+      setInvalidSwap([
+        { [`${x1},${y1}`]: getSwapDirection(x2, y2, x1, y1) },
+        { [`${x2},${y2}`]: getSwapDirection(x1, y1, x2, y2) },
+      ]);
+
+      await sleep(1000);
+      setSwappingCells([null, null]);
+      setInvalidSwap([null, null]);
       setIsGridBlocked(false);
     }
   };
@@ -196,11 +203,19 @@ const GameGrid: React.FC<GameGridProps> = ({
       {grid.map((x, y, val) => {
         const pos = `${x},${y}`;
         let swapDir = "";
+        let invalidDir = "";
 
         // Find swap direction for this cell
         swappingCells.forEach((cellObj) => {
           if (cellObj && cellObj[pos]) {
             swapDir = cellObj[pos];
+          }
+        });
+
+        // Find invalid swap direction
+        invalidSwap.forEach((cellObj) => {
+          if (cellObj && cellObj[pos]) {
+            invalidDir = cellObj[pos];
           }
         });
 
@@ -210,11 +225,13 @@ const GameGrid: React.FC<GameGridProps> = ({
             className={clsx("card", {
               selected: selected === pos,
               delete: toDelete.includes(pos),
-              swapping: swapDir !== "",
-              animated: swapDir !== "",
+              swapping: swapDir,
+              "invalid-swap": invalidDir,
+              animated: swapDir || invalidDir,
               falling: fallingCells.has(pos),
-              wildcard: val === WILDCARD_INDEX, // Special styling for wildcards
-              [swapDir]: swapDir !== "",
+              wildcard: val === WILDCARD_INDEX,
+              [swapDir]: swapDir,
+              //[invalidDir]: invalidDir,
             })}
             onClick={clickCell}
             data-x={x}

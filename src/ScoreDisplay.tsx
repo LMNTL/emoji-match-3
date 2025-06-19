@@ -16,7 +16,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
   }, [score]);
 
   useEffect(() => {
-    if (scoreIncrease > 0) {
+    // Next stage - change score immediately and don't show popups
+    if (scoreIncrease < 0) {
+      setDisplayScore(score);
+    } else if (scoreIncrease > 0) {
       const popupId = Date.now();
       setPopups((prevPopups) => {
         return { ...prevPopups, [popupId]: scoreIncrease };
