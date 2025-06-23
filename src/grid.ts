@@ -1,4 +1,4 @@
-import { WILDCARD_INDEX } from "./App.tsx";
+import { isRocket, ROCKET_INDICES, WILDCARD_INDEX } from "./emojiMap.js";
 
 export default class Grid {
   private readonly width: number;
@@ -100,6 +100,18 @@ export default class Grid {
     const lineMatches = [];
 
     cells.forEach(({ val }, index) => {
+      // Skip rockets - they don't participate in matches
+      if (isRocket(val)) {
+        if (count >= 3) {
+          lineMatches.push(
+            ...cells.slice(index - count, index).map((c) => `${c.x},${c.y}`),
+          );
+        }
+        last = null;
+        count = 0;
+        return;
+      }
+
       // Wildcard matches with any non-null value
       const isWildcard = val === WILDCARD_INDEX;
       const lastIsWildcard = last === WILDCARD_INDEX;
@@ -235,6 +247,10 @@ export default class Grid {
 
   // Helper method to check if placing a value would create a match
   private wouldCreateMatch = (x: number, y: number, value: number): boolean => {
+    // Rockets never create matches
+    if (isRocket(value)) {
+      return false;
+    }
     const originalValue = this.get(x, y);
     this.set(x, y, value);
 

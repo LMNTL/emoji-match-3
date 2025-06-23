@@ -1,4 +1,4 @@
- .grid {
+.grid {
   display: grid;
   gap: 1em;
   justify-content: center;
@@ -15,6 +15,10 @@
   aspect-ratio: 1;
   border-radius: 8px;
   transition: all 0.3s ease;
+}
+
+.card-inner {
+  pointer-events: none;
 }
 
 .selected {
@@ -56,53 +60,101 @@ span.delete {
 }
 
 /* Swap animations */
-.animated.up { animation-name: up; }
-.animated.up-right { animation-name: up-right; }
-.animated.right { animation-name: right; }
-.animated.down-right { animation-name: down-right; }
-.animated.down { animation-name: down; }
-.animated.down-left { animation-name: down-left; }
-.animated.left { animation-name: left; }
-.animated.up-left { animation-name: up-left; }
+.animated.up {
+  animation-name: up;
+}
+.animated.up-right {
+  animation-name: up-right;
+}
+.animated.right {
+  animation-name: right;
+}
+.animated.down-right {
+  animation-name: down-right;
+}
+.animated.down {
+  animation-name: down;
+}
+.animated.down-left {
+  animation-name: down-left;
+}
+.animated.left {
+  animation-name: left;
+}
+.animated.up-left {
+  animation-name: up-left;
+}
 
 @keyframes up {
-  from { transform: translateY(0%); }
-  to { transform: translateY(-100%); }
+  from {
+    transform: translateY(0%);
+  }
+  to {
+    transform: translateY(-100%);
+  }
 }
 
 @keyframes up-right {
-  from { transform: translate(0%, 0%); }
-  to { transform: translate(100%, -100%); }
+  from {
+    transform: translate(0%, 0%);
+  }
+  to {
+    transform: translate(100%, -100%);
+  }
 }
 
 @keyframes right {
-  from { transform: translateX(0%); }
-  to { transform: translateX(100%); }
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes down-right {
-  from { transform: translate(0%, 0%); }
-  to { transform: translate(100%, 100%); }
+  from {
+    transform: translate(0%, 0%);
+  }
+  to {
+    transform: translate(100%, 100%);
+  }
 }
 
 @keyframes down {
-  from { transform: translateY(0%); }
-  to { transform: translateY(100%); }
+  from {
+    transform: translateY(0%);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 @keyframes down-left {
-  from { transform: translate(0%, 0%); }
-  to { transform: translate(-100%, 100%); }
+  from {
+    transform: translate(0%, 0%);
+  }
+  to {
+    transform: translate(-100%, 100%);
+  }
 }
 
 @keyframes left {
-  from { transform: translateX(0%); }
-  to { transform: translateX(-100%); }
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes up-left {
-  from { transform: translate(0%, 0%); }
-  to { transform: translate(-100%, -100%); }
+  from {
+    transform: translate(0%, 0%);
+  }
+  to {
+    transform: translate(-100%, -100%);
+  }
 }
 
 .falling {
@@ -134,7 +186,160 @@ span.delete {
     background-color: rgb(255, 165, 0, 0);
   }
   100% {
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 35px rgba(255, 215, 0, 0.3);
-    background-color: #FFD700;
+    box-shadow:
+      0 0 25px rgba(255, 215, 0, 0.8),
+      0 0 35px rgba(255, 215, 0, 0.3);
+    background-color: #ffd700;
+  }
+}
+
+.rocket {
+  box-shadow: 0 0 15px rgba(255, 69, 0, 0.5);
+  animation: rocket-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes rocket-glow {
+  0% {
+    box-shadow: 0 0 15px rgba(255, 69, 0, 0.2);
+    background-color: rgba(255, 69, 0, 0);
+  }
+  100% {
+    box-shadow:
+      0 0 25px rgba(255, 69, 0, 0.8),
+      0 0 35px rgba(255, 69, 0, 0.3);
+    background-color: #ff4500;
+  }
+}
+
+.rocket > .up {
+  rotate: -45deg;
+}
+.rocket > .down {
+  rotate: 135deg;
+}
+.rocket > .left {
+  rotate: -135deg;
+}
+.rocket > .right {
+  rotate: 45deg;
+}
+.rocket > .up-left {
+  rotate: -90deg;
+}
+.rocket > .up-right {
+  rotate: 0deg;
+}
+.rocket > .down-left {
+  rotate: -180deg;
+}
+.rocket > .down-right {
+  rotate: 90deg;
+}
+
+.rocket.delete > * {
+  animation-duration: 0.5s;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+.rocket.delete > .up {
+  animation-name: rocket-fly-up;
+}
+
+.rocket.delete > .up-right {
+  animation-name: rocket-fly-up-right;
+}
+
+.rocket.delete > .right {
+  animation-name: rocket-fly-right;
+}
+
+.rocket.delete > .down-right {
+  animation-name: rocket-fly-down-right;
+}
+
+.rocket.delete > .down {
+  animation-name: rocket-fly-down;
+}
+
+.rocket.delete > .down-left {
+  animation-name: rocket-fly-down-left;
+}
+
+.rocket.delete > .left {
+  animation-name: rocket-fly-left;
+}
+
+.rocket.delete > .up-left {
+  animation-name: rocket-fly-up-left;
+}
+
+@keyframes rocket-fly-up {
+  0% {
+    translate: 0 0;
+  }
+  100% {
+    translate: 0 100vw;
+  }
+}
+
+@keyframes rocket-fly-up-right {
+  from {
+    translate 0 0;
+  }
+  to {
+    translate: 100vw -100vw;
+  }
+}
+
+@keyframes rocket-fly-right {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 100vw 0;
+  }
+}
+
+@keyframes rocket-fly-down-right {
+  from {
+    translate: 0 0;  }
+  to {
+    translate: 100vw 100vw;
+  }
+}
+
+@keyframes rocket-fly-down {
+  from {
+    translate: 0 0;  }
+  to {
+    translate: 0 100vw;
+  }
+}
+
+@keyframes rocket-fly-down-left {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -100vw 100vw;
+  }
+}
+
+@keyframes rocket-fly-left {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -100vw 0;
+  }
+}
+
+@keyframes rocket-fly-up-left {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -100vw  -100vw;
   }
 }

@@ -8,15 +8,7 @@ import StatsDisplay from "./components/StatsDisplay";
 import VictoryAnimation from "./components/VictoryAnimation";
 import { StageManager } from "./StageManager";
 import type { GameStats } from "./types";
-
-export const emojiMap = ["❤️", "👾", "😎", "🍆", "💩", "👽", "🌟"];
-export const WILDCARD_INDEX = 6;
-
-export const randInMap = () => {
-  return Math.random() < 0.1
-    ? WILDCARD_INDEX
-    : Math.floor(Math.random() * (emojiMap.length - 1));
-};
+import { randInMap } from "./emojiMap.js";
 
 function App({ length }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -58,20 +50,57 @@ function App({ length }) {
       setShowVictory(true);
       setCurrentStage(StageManager.getNextStage(currentStage.stage));
     }
-  }, [stats.score, currentStage.stage, isGridBlocked]);
+  }, [stats.score, isGridBlocked]);
 
   useEffect(() => {
+    generateNonmatchingGridAsync();
+  }, []);
+
+  const generateNonmatchingGridAsync = async () => {
+    setIsLoading(true);
+
+    // Create web worker
+    const worker = new Worker(new URL("./gridWorker.js", import.meta.url), {
+      type: "module",
+    });
+
+    worker.postMessage({ length });
+
+    worker.onmessage = (e) => {
+      const { gridData } = e.data;
+      const newGrid = new Grid(length, length, (x, y) => gridData[x][y]);
+      setGrid(newGrid);
+      setIsLoading(false);
+      setIsGridBlocked(false);
+      worker.terminate();
+    };
+
+    worker.onerror = (error) => {
+      console.error("Worker error:", error);
+      // Fallback to synchronous generation
+      const startGrid = generateNonmatchingGrid(grid);
+      setGrid(startGrid);
+      setIsLoading(false);
+      setIsGridBlocked(false);
+      worker.terminate();
+    };
+  };
+
+  const generateNonmatchingGrid = (startGrid = null) => {
     let matches = [];
-    let tempGrid = grid.clone();
+    let tempGrid;
+    if (startGrid) {
+      tempGrid = startGrid.clone();
+    } else {
+      tempGrid = new Grid(length, length, randInMap);
+    }
     matches = tempGrid.findMatches();
     while (matches.length) {
       tempGrid = new Grid(length, length, randInMap);
       matches = tempGrid.findMatches();
     }
-    setGrid(tempGrid);
-    setIsLoading(false);
-    setIsGridBlocked(false);
-  }, []);
+    return tempGrid;
+  };
 
   const addScore = (addedScore: number) => {
     setStats((prev) => ({

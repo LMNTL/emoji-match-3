@@ -1,8 +1,14 @@
 import React, { useState } from "react";
 import { clsx } from "clsx";
 import type Grid from "./grid.ts";
-import { emojiMap, randInMap, WILDCARD_INDEX } from "./App.tsx";
 import "./GameGrid.css";
+import {
+  emojiMap,
+  getRocketDirection,
+  isRocket,
+  randInMap,
+  WILDCARD_INDEX,
+} from "./emojiMap.js";
 
 const DIRECTIONS = {
   UP: "up",
@@ -83,21 +89,79 @@ const GameGrid: React.FC<GameGridProps> = ({
     }
 
     setSelected("");
-    // Wildcard bonus: if matches include wildcards, give bonus points
+
+    // Calculate score with rocket bonus
     const wildcardCount = matches.filter((pos) => {
       const [x, y] = pos.split(",").map(Number);
       return currentGrid.get(x, y) === WILDCARD_INDEX;
     }).length;
+
     const baseScore = matches.length * 10;
-    const bonusScore = wildcardCount * 20; // Extra points for wildcards
-    addScore(baseScore + bonusScore);
+    const wildcardBonus = wildcardCount * 20;
 
-    // Show bubble pop animation
-    setToDelete(matches);
-    await sleep(800); // Longer delay for bubble animation
+    addScore(baseScore + wildcardBonus);
 
-    // Null out matched cells
-    currentGrid.nullOutMatches(matches);
+    await removeMatches(matches, currentGrid);
+
+    // Check for rockets adjacent to matches and activate them
+    const rocketActivations = new Set();
+    matches.forEach((pos) => {
+      const [x, y] = pos.split(",").map(Number);
+
+      // Check all 8 adjacent positions for rockets
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx === 0 && dy === 0) continue;
+
+          const rocketX = x + dx;
+          const rocketY = y + dy;
+
+          if (
+            rocketX >= 0 &&
+            rocketX < currentGrid.getWidth() &&
+            rocketY >= 0 &&
+            rocketY < currentGrid.getLength()
+          ) {
+            const rocketVal = currentGrid.get(rocketX, rocketY);
+            if (isRocket(rocketVal)) {
+              rocketActivations.add(`${rocketX},${rocketY}`);
+            }
+          }
+        }
+      }
+    });
+
+    // Process rocket activations
+    const rocketMatches = new Set(matches);
+    rocketActivations.forEach((rocketPos) => {
+      const [rocketX, rocketY] = rocketPos.split(",").map(Number);
+      const rocketVal = currentGrid.get(rocketX, rocketY);
+      const direction = getRocketDirection(rocketVal);
+
+      // Clear all cells in that direction
+      let currentX = rocketX + direction.dx;
+      let currentY = rocketY + direction.dy;
+
+      while (
+        currentX >= 0 &&
+        currentX < currentGrid.getWidth() &&
+        currentY >= 0 &&
+        currentY < currentGrid.getLength()
+      ) {
+        rocketMatches.add(`${currentX},${currentY}`);
+        currentX += direction.dx;
+        currentY += direction.dy;
+      }
+
+      // Also remove the rocket itself
+      rocketMatches.add(rocketPos);
+    });
+
+    const rocketCount = rocketActivations.size;
+    const rocketBonus = rocketCount * 50; // Big bonus for rocket activations
+    addScore(rocketBonus);
+
+    await removeMatches(rocketMatches, currentGrid);
 
     // Track which cells will be falling
     const newFallingCells = new Set();
@@ -149,6 +213,15 @@ const GameGrid: React.FC<GameGridProps> = ({
     } else {
       setIsGridBlocked(false);
     }
+  };
+
+  const removeMatches = async (matches, currentGrid) => {
+    // Show bubble pop animation
+    setToDelete(Array.from(matches));
+    await sleep(500);
+
+    // Null out matched cells
+    currentGrid.nullOutMatches(matches);
   };
 
   const getSwapDirection = (x1: number, y1: number, x2: number, y2: number) => {
@@ -203,15 +276,14 @@ const GameGrid: React.FC<GameGridProps> = ({
       {grid.map((x, y, val) => {
         const pos = `${x},${y}`;
         let swapDir = "";
-        let invalidDir = "";
 
+        let invalidDir = "";
         // Find swap direction for this cell
         swappingCells.forEach((cellObj) => {
           if (cellObj && cellObj[pos]) {
             swapDir = cellObj[pos];
           }
         });
-
         // Find invalid swap direction
         invalidSwap.forEach((cellObj) => {
           if (cellObj && cellObj[pos]) {
@@ -230,18 +302,25 @@ const GameGrid: React.FC<GameGridProps> = ({
               animated: swapDir || invalidDir,
               falling: fallingCells.has(pos),
               wildcard: val === WILDCARD_INDEX,
+              rocket: isRocket(val),
               [swapDir]: swapDir,
-              //[invalidDir]: invalidDir,
             })}
             onClick={clickCell}
             data-x={x}
             data-y={y}
+            data-val={val}
             style={{
               gridColumn: x + 1,
               gridRow: y + 1,
             }}
           >
-            {val !== null ? emojiMap[val] : ""}
+            <span
+              className={clsx("card-inner", {
+                [getRocketDirection(val)?.name]: isRocket(val),
+              })}
+            >
+              {val !== null ? emojiMap[val] : ""}
+            </span>
           </span>
         );
       })}
