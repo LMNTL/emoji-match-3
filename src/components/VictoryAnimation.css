@@ -1,16 +1,38 @@
- .victory-overlay {
+.victory-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.victory-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 60%;
+  top: 20%;
   background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
   background-size: 400% 400%;
-  animation: gradient-shift 2s ease infinite;
+  animation:
+    gradient-shift 2s ease infinite,
+    grow 0.5s ease-in;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+}
+
+@keyframes grow {
+  from {
+    height: 0;
+    top: 50%;
+  }
+  to {
+    height: 60%;
+    top: 20%;
+  }
 }
 
 .victory-content {
@@ -22,8 +44,9 @@
 .victory-title {
   font-size: 4em;
   margin: 0;
+  opacity: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  animation: bounce-in 1s ease;
+  animation: bounce-in 1s ease 0.5s forwards;
 }
 
 .victory-emoji {
@@ -46,17 +69,47 @@
   animation: firework-burst 2s ease-out infinite;
 }
 
-.firework-1 { animation-delay: 0s; top: -100px; left: -50px; }
-.firework-2 { animation-delay: 0.3s; top: -80px; left: 50px; }
-.firework-3 { animation-delay: 0.6s; top: 50px; left: -80px; }
-.firework-4 { animation-delay: 0.9s; top: 60px; left: 80px; }
-.firework-5 { animation-delay: 1.2s; top: -50px; left: 0px; }
-.firework-6 { animation-delay: 1.5s; top: 20px; left: 20px; }
+.firework-1 {
+  animation-delay: 0s;
+  top: -100px;
+  left: -50px;
+}
+.firework-2 {
+  animation-delay: 0.3s;
+  top: -80px;
+  left: 50px;
+}
+.firework-3 {
+  animation-delay: 0.6s;
+  top: 50px;
+  left: -80px;
+}
+.firework-4 {
+  animation-delay: 0.9s;
+  top: 60px;
+  left: 80px;
+}
+.firework-5 {
+  animation-delay: 1.2s;
+  top: -50px;
+  left: 0px;
+}
+.firework-6 {
+  animation-delay: 1.5s;
+  top: 20px;
+  left: 20px;
+}
 
 @keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes bounce-in {
@@ -69,6 +122,7 @@
     transform: scale(1.1) translateY(0);
   }
   100% {
+    opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
@@ -97,5 +151,32 @@
   100% {
     opacity: 0;
     transform: scale(2);
+  }
+}
+
+.streak {
+  width: 10em;
+  height: 1px;
+  background-color: #f8f9fa;
+  border-radius: 20%;
+  border: 4px #f8f9fa solid;
+  opacity: 0.3;
+  z-index: -1;
+  position: absolute;
+  animation: 1s pan ease-in-out infinite;
+}
+
+.small-streak {
+  width: 4em;
+  border: 2px #f8f9fa solid;
+  animation: 0.6s pan ease-in-out infinite;
+}
+
+@keyframes pan {
+  0% {
+    right: -10em;
+  }
+  100% {
+    right: 100%;
   }
 }

@@ -17,7 +17,7 @@ export const emojiMap = [
 ];
 const WILDCARD_CHANCE = 0.1;
 export const WILDCARD_INDEX = 6;
-const ROCKET_CHANCE = 0.03;
+const ROCKET_CHANCE = 0.01;
 export const ROCKET_INDICES = {
   UP: 7,
   DOWN: 8,

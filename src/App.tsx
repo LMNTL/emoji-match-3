@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import Grid from "./grid.js";
 import GameGrid from "./GameGrid";
@@ -9,6 +9,7 @@ import VictoryAnimation from "./components/VictoryAnimation";
 import { StageManager } from "./StageManager";
 import type { GameStats } from "./types";
 import { randInMap } from "./emojiMap.js";
+import { clsx } from "clsx";
 
 function App({ length }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -43,12 +44,34 @@ function App({ length }) {
     return () => clearInterval(timer);
   }, [isGridBlocked, showVictory, showStats, gameStartTime]);
 
+  const handleEsc = (event) => {
+    if (event.key === "Escape") {
+      clearSelection();
+      if (showStats) {
+        handleStatsContinue();
+      }
+    }
+  };
+
+  // Handle escape key
+  useEffect(() => {
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [showStats]);
+
   // Stage progression check
   useEffect(() => {
     const newStage = StageManager.getCurrentStage(stats.score);
     if (newStage.stage > currentStage.stage && !isGridBlocked) {
       setShowVictory(true);
       setCurrentStage(StageManager.getNextStage(currentStage.stage));
+      setStats((prev) => ({
+        ...prev,
+        time: Math.floor((Date.now() - gameStartTime) / 1000),
+      }));
     }
   }, [stats.score, isGridBlocked]);
 
@@ -58,6 +81,7 @@ function App({ length }) {
 
   const generateNonmatchingGridAsync = async () => {
     setIsLoading(true);
+    setIsGridBlocked(true);
 
     // Create web worker
     const worker = new Worker(new URL("./gridWorker.js", import.meta.url), {
@@ -72,6 +96,7 @@ function App({ length }) {
       setGrid(newGrid);
       setIsLoading(false);
       setIsGridBlocked(false);
+      setGameStartTime(Date.now());
       worker.terminate();
     };
 
@@ -82,6 +107,7 @@ function App({ length }) {
       setGrid(startGrid);
       setIsLoading(false);
       setIsGridBlocked(false);
+      setGameStartTime(Date.now());
       worker.terminate();
     };
   };
@@ -118,6 +144,7 @@ function App({ length }) {
   const handleVictoryComplete = () => {
     setShowVictory(false);
     setShowStats(true);
+    setIsGridBlocked(false);
   };
 
   const handleStatsContinue = () => {
@@ -129,7 +156,10 @@ function App({ length }) {
   };
 
   return (
-    <div className="page" onClick={clearSelection}>
+    <div
+      className={clsx("page", { frozen: showStats || showVictory })}
+      onClick={clearSelection}
+    >
       <StageDisplay stats={stats} currentStage={currentStage}>
         <ScoreDisplay
           score={stats.score}
