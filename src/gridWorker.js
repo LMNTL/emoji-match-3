@@ -1,8 +1,10 @@
-import { randInMap } from "./emojiMap.js";
+import { randInMap, createStageBasedRandInMap } from "./emojiMap.js";
 import Grid from "./grid.js";
 
 self.onmessage = function (e) {
-  const { length } = e.data;
+  const { length, stage = 1 } = e.data;
+
+  const stageBasedRandInMap = createStageBasedRandInMap(stage);
 
   let matches = [];
   let tempGrid;
@@ -10,7 +12,7 @@ self.onmessage = function (e) {
   const maxAttempts = 100000;
 
   do {
-    tempGrid = new Grid(length, length, randInMap);
+    tempGrid = new Grid(length, length, stageBasedRandInMap);
     matches = tempGrid.findMatches();
     attempts++;
   } while (matches.length > 0 && attempts < maxAttempts);

@@ -1,4 +1,4 @@
-import { isRocket, ROCKET_INDICES, WILDCARD_INDEX } from "./emojiMap.js";
+import { isRocket, WILDCARD_INDEX } from "./emojiMap.js";
 
 export default class Grid {
   private readonly width: number;

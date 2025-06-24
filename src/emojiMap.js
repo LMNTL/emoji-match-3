@@ -63,3 +63,25 @@ export const randInMap = () => {
     Math.random() * (emojiMap.length - Object.keys(ROCKET_INDICES).length - 1),
   ); // Regular emojis
 };
+
+export const createStageBasedRandInMap = (stage) => {
+  return () => {
+    let rand = Math.random();
+
+    // Only include rockets from stage 6 onwards
+    if (stage >= 6 && rand < ROCKET_CHANCE) {
+      return getRandomRocket();
+    }
+
+    rand = Math.random();
+    // Only include wildcards from stage 3 onwards
+    if (stage >= 3 && rand < WILDCARD_CHANCE) {
+      return WILDCARD_INDEX;
+    }
+
+    return Math.floor(
+      Math.random() *
+        (emojiMap.length - Object.keys(ROCKET_INDICES).length - 1),
+    ); // Regular emojis
+  };
+};

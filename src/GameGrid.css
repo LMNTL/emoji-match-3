@@ -3,7 +3,12 @@
   gap: 1em;
   justify-content: center;
   margin: 2em auto;
+  padding: 1em;
   max-width: 500px;
+  background-color: rgba(166, 158, 158, 0.5);
+  backdrop-filter: blur(200px);
+  box-shadow: 2px 2px rgb(248, 249, 250, 0.3);
+  border-radius: 10px;
 }
 
 .card {
@@ -285,7 +290,7 @@ span.delete {
 
 @keyframes rocket-fly-up-right {
   from {
-    translate 0 0;
+    translate: 0 0;
   }
   to {
     translate: 100vw -100vw;
@@ -303,7 +308,8 @@ span.delete {
 
 @keyframes rocket-fly-down-right {
   from {
-    translate: 0 0;  }
+    translate: 0 0;
+  }
   to {
     translate: 100vw 100vw;
   }
@@ -311,7 +317,8 @@ span.delete {
 
 @keyframes rocket-fly-down {
   from {
-    translate: 0 0;  }
+    translate: 0 0;
+  }
   to {
     translate: 0 100vw;
   }
@@ -340,6 +347,6 @@ span.delete {
     translate: 0 0;
   }
   to {
-    translate: -100vw  -100vw;
+    translate: -100vw -100vw;
   }
 }

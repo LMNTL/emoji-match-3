@@ -7,7 +7,7 @@ interface VictoryAnimationProps {
   stageNumber: number;
 }
 
-const streaks = Array.from({ length: 10 }).map((el, ind) => (
+const streaks = Array.from({ length: 10 }).map((_, ind) => (
   <div
     key={ind}
     className={clsx("streak", { "small-streak": ind > 5 })}

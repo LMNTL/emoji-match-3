@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { clsx } from "clsx";
 import type Grid from "./grid.ts";
 import "./GameGrid.css";
 import {
+  createStageBasedRandInMap,
   emojiMap,
   getRocketDirection,
   isRocket,
-  randInMap,
   WILDCARD_INDEX,
 } from "./emojiMap.js";
 
@@ -29,6 +29,7 @@ interface GameGridProps {
   addScore: (addedScore: number) => void;
   selected: string;
   setSelected: (selected: string) => void;
+  currentStage: number;
 }
 
 const GameGrid: React.FC<GameGridProps> = ({
@@ -39,6 +40,7 @@ const GameGrid: React.FC<GameGridProps> = ({
   addScore,
   selected,
   setSelected,
+  currentStage,
 }) => {
   const [toDelete, setToDelete] = useState([]);
   const [swappingCells, setSwappingCells] = useState([null, null]);
@@ -48,6 +50,11 @@ const GameGrid: React.FC<GameGridProps> = ({
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  const randInMap = useMemo(
+    () => createStageBasedRandInMap(currentStage),
+    [currentStage],
+  );
 
   const startSwitch = async (x1, y1, x2, y2) => {
     setIsGridBlocked(true);
@@ -104,7 +111,7 @@ const GameGrid: React.FC<GameGridProps> = ({
     await removeMatches(matches, currentGrid);
 
     // Check for rockets adjacent to matches and activate them
-    const rocketActivations = new Set();
+    const rocketActivations: Set<String> = new Set();
     matches.forEach((pos) => {
       const [x, y] = pos.split(",").map(Number);
 

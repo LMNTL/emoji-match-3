@@ -5,9 +5,14 @@ import "./StatsDisplay.css";
 interface StatsDisplayProps {
   stats: GameStats;
   onContinue: () => void;
+  stage: number;
 }
 
-const StatsDisplay: React.FC<StatsDisplayProps> = ({ stats, onContinue }) => {
+const StatsDisplay: React.FC<StatsDisplayProps> = ({
+  stats,
+  stage,
+  onContinue,
+}) => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -17,7 +22,7 @@ const StatsDisplay: React.FC<StatsDisplayProps> = ({ stats, onContinue }) => {
   return (
     <div className="stats-overlay">
       <div className="stats-modal">
-        <h2>Stage {stats.stage} Complete!</h2>
+        <h2>Stage {stage - 1} Complete!</h2>
         <div className="stats-grid">
           <div className="stat-item">
             <span className="stat-label">Score</span>

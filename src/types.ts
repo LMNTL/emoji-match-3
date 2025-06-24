@@ -2,7 +2,6 @@ export interface GameStats {
   score: number;
   time: number;
   matches: number;
-  stage: number;
 }
 
 export interface StageConfig {
