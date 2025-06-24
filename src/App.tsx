@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Grid from "./grid.js";
 import GameGrid from "./GameGrid";
@@ -29,6 +29,7 @@ function App({ length }) {
   const [currentStage, setCurrentStage] = useState(
     StageManager.getCurrentStage(0),
   );
+  const workerRef = useRef(null);
 
   // Timer effect
   useEffect(() => {
@@ -77,6 +78,9 @@ function App({ length }) {
 
   useEffect(() => {
     generateNonmatchingGridAsync();
+    return () => {
+      workerRef.current?.terminate();
+    };
   }, []);
 
   const generateNonmatchingGridAsync = async () => {
@@ -87,6 +91,7 @@ function App({ length }) {
     const worker = new Worker(new URL("./gridWorker.js", import.meta.url), {
       type: "module",
     });
+    workerRef.current = worker;
 
     worker.postMessage({ length });
 
@@ -97,7 +102,6 @@ function App({ length }) {
       setIsLoading(false);
       setIsGridBlocked(false);
       setGameStartTime(Date.now());
-      worker.terminate();
     };
 
     worker.onerror = (error) => {
