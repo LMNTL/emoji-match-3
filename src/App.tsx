@@ -120,7 +120,6 @@ function App({ length }) {
       const stageBasedRandInMap = createStageBasedRandInMap(currentStage.stage);
       const startGrid = generateNonmatchingGrid(grid, stageBasedRandInMap);
       setGridAndStart(startGrid);
-      worker.terminate();
     };
   };
 
@@ -208,7 +207,6 @@ function App({ length }) {
           currentStage={currentStage.stage}
         />
       )}
-
       {showVictory && (
         <VictoryAnimation
           stageNumber={currentStage.stage}
