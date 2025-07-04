@@ -16,6 +16,19 @@ export default class Grid {
     );
   }
 
+  toString = () => {
+    let str = "";
+    for (let i = 0; i < this.length; i++) {
+      str +=
+        "[ " +
+        this.getCol(i)
+          .map((el) => (el.val === null ? "X" : el.val))
+          .join(" ") +
+        " ]\n";
+    }
+    return str;
+  };
+
   subset = (x1: number, y1: number, x2: number, y2: number) => {
     if (
       x1 < 0 ||
@@ -25,7 +38,7 @@ export default class Grid {
       y1 > this.length ||
       y2 > this.length ||
       x1 > this.width ||
-      y2 > this.width
+      x2 > this.width
     ) {
       throw new Error("Subset out of range!");
     }
@@ -57,13 +70,16 @@ export default class Grid {
   getLength = () => this.length;
 
   getRow = (x: number) => {
-    return this.grid[x].map((el, y) => {
+    return this.grid?.[x]?.map((el, y) => {
       return { x, y, val: el };
     });
   };
 
   getCol = (y: number) => {
     const col = [];
+    if (y >= this.length || y < 0) {
+      return undefined;
+    }
     for (let i = 0; i < this.length; i++) {
       col.push({
         x: i,
@@ -204,11 +220,18 @@ export default class Grid {
         }
       }
 
+      if (nonNullValues.length === this.length) {
+        continue;
+      }
+
       // Fill column from bottom up with existing values
       for (let y = this.length - 1; y >= 0; y--) {
         const newVal = nonNullValues.pop() || null;
         if (this.get(x, y) !== newVal) {
+          console.log(this.get(x, y));
           this.set(x, y, newVal);
+          console.log(x + "," + y);
+          console.log(newVal);
           moved = true;
         }
       }

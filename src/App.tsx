@@ -13,7 +13,7 @@ import { randInMap, createStageBasedRandInMap } from "./emojiMap.js";
 import { clsx } from "clsx";
 import DebugTools from "./components/DebugTools.tsx";
 
-const isDev = process?.env?.NODE_ENV === "development";
+const isDev = import.meta.env.MODE === "development";
 
 function App({ length }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -59,9 +59,10 @@ function App({ length }) {
   // Stage progression check
   useEffect(() => {
     if (
-      StageManager.isStageBeaten(stats.score, currentStage.stage) &&
       !showStats &&
-      !showVictory
+      !showVictory &&
+      !isGridBlocked &&
+      StageManager.isStageBeaten(stats.score, currentStage.stage)
     ) {
       setShowVictory(true);
       setCurrentStage(StageManager.getNextStage(currentStage.stage));
@@ -70,7 +71,7 @@ function App({ length }) {
         time: Math.floor((Date.now() - gameStartTime) / 1000),
       }));
     }
-  }, [stats.score, showStats, showVictory]);
+  }, [stats.score, showStats, showVictory, isGridBlocked]);
 
   // Check for new features to show tooltips
   useEffect(() => {

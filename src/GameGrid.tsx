@@ -45,10 +45,12 @@ const GameGrid: React.FC<GameGridProps> = ({
   const [toDelete, setToDelete] = useState([]);
   const [swappingCells, setSwappingCells] = useState([null, null]);
   const [fallingCells, setFallingCells] = useState(new Set());
+  const [comboMultiplier, setComboMultiplier] = useState(1.0);
+  const [animationSpeed, setAnimationSpeed] = useState(1.0);
   const [invalidSwap, setInvalidSwap] = useState([null, null]); // New state for invalid swaps
 
   function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms / animationSpeed));
   }
 
   const randInMap = useMemo(
@@ -74,7 +76,7 @@ const GameGrid: React.FC<GameGridProps> = ({
       setSwappingCells([null, null]);
       setGrid(newGrid);
       setToDelete(matches);
-      await processMatches(newGrid, matches);
+      await processMatches(newGrid, matches, 1); // Start with comboLevel 1
     } else {
       // Invalid swap - show reverse animation
       setInvalidSwap([
@@ -89,7 +91,7 @@ const GameGrid: React.FC<GameGridProps> = ({
     }
   };
 
-  const processMatches = async (currentGrid, matches) => {
+  const processMatches = async (currentGrid, matches, comboLevel = 1) => {
     if (matches.length === 0) {
       setIsGridBlocked(false);
       return;
@@ -97,7 +99,7 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     setSelected("");
 
-    // Calculate score with rocket bonus
+    // Calculate score with rocket bonus and combo multiplier
     const wildcardCount = matches.filter((pos) => {
       const [x, y] = pos.split(",").map(Number);
       return currentGrid.get(x, y) === WILDCARD_INDEX;
@@ -105,8 +107,11 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     const baseScore = matches.length * 10;
     const wildcardBonus = wildcardCount * 20;
-
-    addScore(baseScore + wildcardBonus);
+    const multiplier = 1 + 0.1 * (comboLevel - 1);
+    const speed = Math.min((multiplier - 1.0) * 2.0 + 1.0, 2.5);
+    setComboMultiplier(multiplier);
+    setAnimationSpeed(speed);
+    addScore((baseScore + wildcardBonus) * multiplier);
 
     await removeMatches(matches, currentGrid);
 
@@ -166,7 +171,7 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     const rocketCount = rocketActivations.size;
     const rocketBonus = rocketCount * 50; // Big bonus for rocket activations
-    addScore(rocketBonus);
+    addScore(rocketBonus * multiplier);
 
     await removeMatches(rocketMatches, currentGrid);
 
@@ -192,6 +197,15 @@ const GameGrid: React.FC<GameGridProps> = ({
     while (stillMoving) {
       await sleep(200);
       stillMoving = currentGrid.applyGravity(randInMap);
+      if (stillMoving) {
+        const newFallingCells = new Set();
+        fallingCells.forEach((cellPos) => {
+          if (currentGrid.isCellMoving(cellPos)) {
+            newFallingCells.add(cellPos);
+          }
+        });
+        setFallingCells(newFallingCells);
+      }
       setGrid(currentGrid.clone());
     }
 
@@ -215,9 +229,10 @@ const GameGrid: React.FC<GameGridProps> = ({
     // Check for new matches after gravity
     const newMatches = currentGrid.findMatches();
     if (newMatches.length > 0) {
-      await sleep(300);
-      await processMatches(currentGrid, newMatches);
+      await sleep(200);
+      await processMatches(currentGrid, newMatches, comboLevel + 1);
     } else {
+      setComboMultiplier(1.0);
       setIsGridBlocked(false);
     }
   };
@@ -276,10 +291,18 @@ const GameGrid: React.FC<GameGridProps> = ({
   return (
     <div
       className="grid"
-      style={{
-        gridTemplate: `repeat(${grid.getWidth()}, 1fr) / repeat(${grid.getLength()}, 1fr)`,
-      }}
+      style={
+        {
+          gridTemplate: `repeat(${grid.getWidth()}, 1fr) / repeat(${grid.getLength()}, 1fr)`,
+          "--animation-speed": animationSpeed,
+        } as React.CSSProperties
+      }
     >
+      {comboMultiplier > 1.0 && (
+        <div className="combo-indicator">
+          {comboMultiplier.toFixed(1)}x COMBO!
+        </div>
+      )}
       {grid.map((x, y, val) => {
         const pos = `${x},${y}`;
         let swapDir = "";
