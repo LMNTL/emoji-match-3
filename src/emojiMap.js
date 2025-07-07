@@ -14,10 +14,13 @@ export const emojiMap = [
   "🚀",
   "🚀",
   "🚀",
+  "🪨", // Rock emoji
 ];
 const WILDCARD_CHANCE = 0.1;
 export const WILDCARD_INDEX = 6;
 const ROCKET_CHANCE = 0.01;
+const ROCK_CHANCE = 0.05;
+export const ROCK_INDEX = 15;
 export const ROCKET_INDICES = {
   UP: 7,
   DOWN: 8,
@@ -50,6 +53,10 @@ export const isRocket = (val) => {
   return Object.values(ROCKET_INDICES).includes(val);
 };
 
+export const isRock = (val) => {
+  return val === ROCK_INDEX;
+};
+
 export const getRocketDirection = (rocketVal) => {
   return ROCKET_DIRECTIONS[rocketVal - WILDCARD_INDEX - 1];
 };
@@ -68,6 +75,11 @@ export const createStageBasedRandInMap = (stage) => {
   return () => {
     let rand = Math.random();
 
+    // Only include rocks from stage 9 onwards
+    if (stage >= 9 && rand < ROCK_CHANCE) {
+      return ROCK_INDEX;
+    }
+
     // Only include rockets from stage 6 onwards
     if (stage >= 6 && rand < ROCKET_CHANCE) {
       return getRandomRocket();
@@ -81,7 +93,7 @@ export const createStageBasedRandInMap = (stage) => {
 
     return Math.floor(
       Math.random() *
-        (emojiMap.length - Object.keys(ROCKET_INDICES).length - 1),
+        (emojiMap.length - Object.keys(ROCKET_INDICES).length - 2), // -2 for wildcard and rock
     ); // Regular emojis
   };
 };

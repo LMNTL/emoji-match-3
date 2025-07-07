@@ -25,6 +25,12 @@ const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
           description:
             "Rocket emojis clear entire lines when activated by adjacent matches. They point in the direction they will clear and give massive bonus points!",
         };
+      case "rocks":
+        return {
+          title: "Rocks Appear! 🪨",
+          description:
+            "Rock emojis are immovable obstacles that cannot be swapped or matched. Plan your moves carefully around them!",
+        };
       default:
         return {
           title: "New Feature!",

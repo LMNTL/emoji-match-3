@@ -73,7 +73,6 @@ function App({ length }) {
     }
   }, [stats.score, showStats, showVictory, isGridBlocked]);
 
-  // Check for new features to show tooltips
   useEffect(() => {
     // Show tooltip *after* victory/stats screens
     if (showVictory || showStats) {
@@ -87,6 +86,10 @@ function App({ length }) {
       setShowTooltip("rockets");
       setIsGridBlocked(true);
       setSeenFeatures((prev) => new Set(prev).add("rockets"));
+    } else if (currentStage.stage >= 9 && !seenFeatures.has("rocks")) {
+      setShowTooltip("rocks");
+      setIsGridBlocked(true);
+      setSeenFeatures((prev) => new Set(prev).add("rocks"));
     }
   }, [currentStage.stage, showVictory, showStats, seenFeatures]);
 

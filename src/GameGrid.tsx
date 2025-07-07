@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { clsx } from "clsx";
 import type Grid from "./grid.ts";
 import "./GameGrid.css";
@@ -7,6 +7,7 @@ import {
   emojiMap,
   getRocketDirection,
   isRocket,
+  isRock,
   WILDCARD_INDEX,
 } from "./emojiMap.js";
 
@@ -47,7 +48,9 @@ const GameGrid: React.FC<GameGridProps> = ({
   const [fallingCells, setFallingCells] = useState(new Set());
   const [comboMultiplier, setComboMultiplier] = useState(1.0);
   const [animationSpeed, setAnimationSpeed] = useState(1.0);
-  const [invalidSwap, setInvalidSwap] = useState([null, null]); // New state for invalid swaps
+  const [invalidSwap, setInvalidSwap] = useState([null, null]);
+  const [focusedCell, setFocusedCell] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms / animationSpeed));
@@ -59,6 +62,11 @@ const GameGrid: React.FC<GameGridProps> = ({
   );
 
   const startSwitch = async (x1, y1, x2, y2) => {
+    // Check if either cell contains a rock - rocks can't be swapped
+    if (isRock(grid.get(x1, y1)) || isRock(grid.get(x2, y2))) {
+      return; // Do nothing if trying to swap with a rock
+    }
+
     setIsGridBlocked(true);
 
     // First animation: swap
@@ -273,23 +281,157 @@ const GameGrid: React.FC<GameGridProps> = ({
     const y = parseInt(event.target.dataset.y);
     const pos = `${x},${y}`;
 
+    // Don't allow selecting rocks
+    if (isRock(grid.get(x, y))) {
+      return;
+    }
+
     if (selected) {
       const [selX, selY] = selected.split(",").map(Number);
       if (x === selX && y === selY) {
         setSelected("");
+        setFocusedCell(pos);
       } else if (Math.abs(selX - x) <= 1 && Math.abs(selY - y) <= 1) {
         startSwitch(selX, selY, x, y);
       } else {
-        console.log("Cannot switch - cells are not adjacent");
         setSelected("");
+        setFocusedCell(pos);
       }
     } else {
       setSelected(pos);
+      setFocusedCell(pos);
     }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (isGridBlocked) return;
+
+    const currentPos = focusedCell || selected || "0,0";
+    const [currentX, currentY] = currentPos.split(",").map(Number);
+    let newX = currentX;
+    let newY = currentY;
+
+    switch (event.key) {
+      case "ArrowUp":
+        event.preventDefault();
+        newY = Math.max(0, currentY - 1);
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        newY = Math.min(grid.getLength() - 1, currentY + 1);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        newX = Math.max(0, currentX - 1);
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        newX = Math.min(grid.getWidth() - 1, currentX + 1);
+        break;
+      case "Tab":
+        if (!focusedCell) {
+          [newX, newY] = [0, 0];
+        } else {
+          if (event.shiftKey) {
+            if (currentX === 0) {
+              newX = grid.getWidth();
+              newY = currentY - 1;
+              if (newY < 0) {
+                return;
+              }
+            } else {
+              newX -= 1;
+            }
+          } else if (currentX + 1 >= grid.getWidth()) {
+            newX = 0;
+            newY = currentY + 1 >= grid.getLength() ? 0 : currentY + 1;
+            if (newY === 0) {
+              return;
+            }
+          } else {
+            newX = currentX + 1;
+          }
+        }
+        event.preventDefault();
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        const pos = `${currentX},${currentY}`;
+
+        // Don't allow selecting rocks
+        if (isRock(grid.get(currentX, currentY))) {
+          return;
+        }
+
+        if (selected) {
+          const [selX, selY] = selected.split(",").map(Number);
+          if (currentX === selX && currentY === selY) {
+            setSelected("");
+          } else if (
+            Math.abs(selX - currentX) <= 1 &&
+            Math.abs(selY - currentY) <= 1
+          ) {
+            startSwitch(selX, selY, currentX, currentY);
+          } else {
+            setSelected("");
+          }
+        } else {
+          setSelected(pos);
+        }
+        break;
+      case "Escape":
+        event.preventDefault();
+        setSelected("");
+        break;
+      default:
+        return;
+    }
+
+    if (event.key.startsWith("Arrow") || event.key === "Tab") {
+      const newPos = `${newX},${newY}`;
+      setFocusedCell(newPos);
+
+      // Focus the grid container to ensure it receives keyboard events
+      if (gridRef.current) {
+        gridRef.current.focus();
+      }
+    }
+  };
+
+  // Set initial focus when grid becomes interactive
+  useEffect(() => {
+    if (!isGridBlocked && !focusedCell && gridRef.current) {
+      setFocusedCell("0,0");
+      gridRef.current.focus();
+    }
+  }, [isGridBlocked, focusedCell]);
+
+  const getEmojiDescription = (val: number | null): string => {
+    if (val === null) return "empty";
+    if (val === WILDCARD_INDEX) return "wildcard star";
+    if (isRocket(val)) {
+      const direction = getRocketDirection(val);
+      return `rocket pointing ${direction?.name || "unknown direction"}`;
+    }
+    if (isRock(val)) return "rock";
+
+    const emojiDescriptions = [
+      "red heart",
+      "alien monster",
+      "cool face",
+      "eggplant",
+      "pile of poo",
+      "alien",
+      "star",
+      "rocket",
+    ];
+    return emojiDescriptions[val] || `emoji ${val}`;
   };
 
   return (
     <div
+      ref={gridRef}
       className="grid"
       style={
         {
@@ -297,17 +439,31 @@ const GameGrid: React.FC<GameGridProps> = ({
           "--animation-speed": animationSpeed,
         } as React.CSSProperties
       }
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      role="grid"
+      aria-label={`Game grid ${grid.getWidth()} by ${grid.getLength()}`}
+      aria-describedby="grid-instructions"
     >
+      <div id="grid-instructions" className="sr-only">
+        Use arrow keys to navigate, Enter or Space to select and swap adjacent
+        pieces, Escape to deselect.
+        {currentStage >= 3 && " Stars are wildcards that match any piece."}
+        {currentStage >= 6 && " Rockets clear entire lines when activated."}
+        {currentStage >= 9 && " Rocks cannot be moved or matched."}
+      </div>
+
       {comboMultiplier > 1.0 && (
-        <div className="combo-indicator">
+        <div className="combo-indicator" aria-live="polite">
           {comboMultiplier.toFixed(1)}x COMBO!
         </div>
       )}
+
       {grid.map((x, y, val) => {
         const pos = `${x},${y}`;
         let swapDir = "";
-
         let invalidDir = "";
+
         // Find swap direction for this cell
         swappingCells.forEach((cellObj) => {
           if (cellObj && cellObj[pos]) {
@@ -321,11 +477,16 @@ const GameGrid: React.FC<GameGridProps> = ({
           }
         });
 
+        const isSelected = selected === pos;
+        const isFocused = focusedCell === pos;
+        const isRockCell = isRock(val);
+
         return (
           <span
             key={pos}
             className={clsx("card", {
-              selected: selected === pos,
+              selected: isSelected,
+              focused: isFocused,
               delete: toDelete.includes(pos),
               swapping: swapDir,
               "invalid-swap": invalidDir,
@@ -333,6 +494,8 @@ const GameGrid: React.FC<GameGridProps> = ({
               falling: fallingCells.has(pos),
               wildcard: val === WILDCARD_INDEX,
               rocket: isRocket(val),
+              rock: isRockCell,
+              disabled: isRockCell,
               [swapDir]: swapDir,
             })}
             onClick={clickCell}
@@ -343,11 +506,17 @@ const GameGrid: React.FC<GameGridProps> = ({
               gridColumn: x + 1,
               gridRow: y + 1,
             }}
+            role="gridcell"
+            aria-label={`${getEmojiDescription(val)} at position ${x + 1}, ${y + 1}${isSelected ? ", selected" : ""}${isFocused ? ", focused" : ""}`}
+            aria-selected={isSelected}
+            aria-disabled={isRockCell}
+            tabIndex={-1}
           >
             <span
               className={clsx("card-inner", {
                 [getRocketDirection(val)?.name]: isRocket(val),
               })}
+              aria-hidden="true"
             >
               {val !== null ? emojiMap[val] : ""}
             </span>
