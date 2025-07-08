@@ -228,10 +228,7 @@ export default class Grid {
       for (let y = this.length - 1; y >= 0; y--) {
         const newVal = nonNullValues.pop() || null;
         if (this.get(x, y) !== newVal) {
-          console.log(this.get(x, y));
           this.set(x, y, newVal);
-          console.log(x + "," + y);
-          console.log(newVal);
           moved = true;
         }
       }

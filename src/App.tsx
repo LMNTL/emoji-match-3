@@ -7,6 +7,7 @@ import StageDisplay from "./components/StageDisplay";
 import StatsDisplay from "./components/StatsDisplay";
 import VictoryAnimation from "./components/VictoryAnimation";
 import FeatureTooltip from "./components/FeatureTooltip";
+import { SoundEvent, SoundSystem, SoundType } from "./components/SoundSystem";
 import { StageManager } from "./StageManager";
 import type { GameStats } from "./types";
 import { randInMap, createStageBasedRandInMap } from "./emojiMap.js";
@@ -64,6 +65,8 @@ function App({ length }) {
       !isGridBlocked &&
       StageManager.isStageBeaten(stats.score, currentStage.stage)
     ) {
+      const matchEvent = new SoundEvent(SoundType.VICTORY);
+      window.dispatchEvent(matchEvent);
       setShowVictory(true);
       setCurrentStage(StageManager.getNextStage(currentStage.stage));
       setStats((prev) => ({
@@ -192,6 +195,7 @@ function App({ length }) {
       )}
       onClick={clearSelection}
     >
+      <SoundSystem />
       {isDev && <DebugTools addScore={addScore} stats={stats} />}
       <StageDisplay stats={stats} currentStage={currentStage}>
         <ScoreDisplay score={stats.score} />

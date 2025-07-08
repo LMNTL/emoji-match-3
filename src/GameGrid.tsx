@@ -10,6 +10,7 @@ import {
   isRock,
   WILDCARD_INDEX,
 } from "./emojiMap.js";
+import { SoundEvent, SoundType } from "./components/SoundSystem.tsx";
 
 const DIRECTIONS = {
   UP: "up",
@@ -107,6 +108,10 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     setSelected("");
 
+    // Increment match sequence count and play match sound
+    const matchEvent = new SoundEvent(SoundType.MATCH, comboLevel);
+    window.dispatchEvent(matchEvent);
+
     // Calculate score with rocket bonus and combo multiplier
     const wildcardCount = matches.filter((pos) => {
       const [x, y] = pos.split(",").map(Number);
@@ -180,6 +185,11 @@ const GameGrid: React.FC<GameGridProps> = ({
     const rocketCount = rocketActivations.size;
     const rocketBonus = rocketCount * 50; // Big bonus for rocket activations
     addScore(rocketBonus * multiplier);
+
+    if (rocketCount > 0) {
+      const matchEvent = new SoundEvent(SoundType.ROCKET);
+      window.dispatchEvent(matchEvent);
+    }
 
     await removeMatches(rocketMatches, currentGrid);
 
