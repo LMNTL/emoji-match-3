@@ -13,10 +13,16 @@ import type { GameStats } from "./types";
 import { randInMap, createStageBasedRandInMap } from "./emojiMap.js";
 import { clsx } from "clsx";
 import DebugTools from "./components/DebugTools.tsx";
+import TitleScreen from "./components/TitleScreen";
+import GameOverScreen from "./components/GameOverScreen";
+import TimerBar from "./components/TimerBar";
 
 const isDev = import.meta.env.MODE === "development";
 
+type GameMode = "title" | "casual" | "timed" | "highscores";
+
 function App({ length }) {
+  const [gameMode, setGameMode] = useState<GameMode>("title");
   const [isLoading, setIsLoading] = useState(true);
   const [grid, setGrid] = useState(new Grid(length, length, randInMap));
   const [stats, setStats] = useState<GameStats>({
@@ -34,7 +40,10 @@ function App({ length }) {
   const [currentStage, setCurrentStage] = useState(
     StageManager.getCurrentStage(0),
   );
+  const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds initial time
+  const [showGameOver, setShowGameOver] = useState(false);
   const workerRef = useRef(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleEsc = (event) => {
     if (event.key === "Escape") {
@@ -44,6 +53,9 @@ function App({ length }) {
       }
       if (showTooltip) {
         setShowTooltip(null);
+      }
+      if (showGameOver) {
+        handleGameOverContinue();
       }
     }
   };
@@ -55,7 +67,48 @@ function App({ length }) {
     return () => {
       window.removeEventListener("keydown", handleEsc);
     };
-  }, [showStats, showTooltip]);
+  }, [showStats, showTooltip, showGameOver]);
+
+  // Timer logic for timed mode
+  useEffect(() => {
+    if (
+      gameMode === "timed" &&
+      !isGridBlocked &&
+      !showVictory &&
+      !showStats &&
+      !showTooltip &&
+      !showGameOver
+    ) {
+      timerRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setShowGameOver(true);
+            setIsGridBlocked(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [
+    gameMode,
+    isGridBlocked,
+    showVictory,
+    showStats,
+    showTooltip,
+    showGameOver,
+  ]);
 
   // Stage progression check
   useEffect(() => {
@@ -97,11 +150,13 @@ function App({ length }) {
   }, [currentStage.stage, showVictory, showStats, seenFeatures]);
 
   useEffect(() => {
-    generateNonmatchingGridAsync();
+    if (gameMode !== "title") {
+      generateNonmatchingGridAsync();
+    }
     return () => {
       workerRef.current?.terminate();
     };
-  }, [currentStage.stage]); // Regenerate grid when stage changes
+  }, [currentStage.stage, gameMode]); // Regenerate grid when stage changes or mode changes
 
   const generateNonmatchingGridAsync = async () => {
     setIsLoading(true);
@@ -159,6 +214,39 @@ function App({ length }) {
       score: prev.score + addedScore,
       matches: prev.matches + 1,
     }));
+
+    // In timed mode, add time bonus for matches
+    if (gameMode === "timed") {
+      const timeBonus = Math.min(5, Math.floor(addedScore / 50)); // Up to 5 seconds bonus
+      setTimeRemaining((prev) => Math.min(60, prev + timeBonus)); // Cap at 60 seconds
+    }
+  };
+
+  const startGame = (mode: GameMode) => {
+    setGameMode(mode);
+    setStats({ score: 0, time: 0, matches: 0 });
+    setCurrentStage(StageManager.getCurrentStage(0));
+    setSeenFeatures(new Set());
+    setShowVictory(false);
+    setShowStats(false);
+    setShowGameOver(false);
+    setShowTooltip(null);
+    setSelected("");
+
+    if (mode === "timed") {
+      setTimeRemaining(30);
+    }
+
+    setGameStartTime(Date.now());
+  };
+
+  const handleGameOverContinue = () => {
+    setShowGameOver(false);
+    setGameMode("title");
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   const clearSelection = () => {
@@ -171,14 +259,6 @@ function App({ length }) {
     setIsGridBlocked(false);
   };
 
-  const handleStatsContinue = () => {
-    setShowStats(false);
-    setGameStartTime(Date.now()); // Reset timer for new stage
-    setStats((prevStats) => {
-      return { ...prevStats, score: 0, matches: 0 };
-    });
-  };
-
   const handleTooltipClose = () => {
     setShowTooltip(null);
     if (!isLoading) {
@@ -186,17 +266,57 @@ function App({ length }) {
     }
   };
 
+  const handleStatsContinue = () => {
+    setShowStats(false);
+    setGameStartTime(Date.now()); // Reset timer for new stage
+    setStats((prevStats) => {
+      return { ...prevStats, score: 0, matches: 0 };
+    });
+
+    // Reset timer for timed mode
+    if (gameMode === "timed") {
+      setTimeRemaining(30);
+    }
+  };
+
+  if (gameMode === "title") {
+    return (
+      <div className="page">
+        <SoundSystem />
+        <TitleScreen onModeSelect={startGame} />
+      </div>
+    );
+  }
+
+  if (gameMode === "highscores") {
+    return (
+      <div className="page">
+        <SoundSystem />
+        <div className="high-scores-screen">
+          <h1>High Scores</h1>
+          <p>Coming soon...</p>
+          <button onClick={() => setGameMode("title")}>Back to Menu</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={clsx(
         "page",
         StageManager.getBackgroundColorClass(currentStage.stage),
-        { frozen: showStats || showVictory || showTooltip },
+        { frozen: showStats || showVictory || showTooltip || showGameOver },
       )}
       onClick={clearSelection}
     >
       <SoundSystem />
       {isDev && <DebugTools addScore={addScore} stats={stats} />}
+
+      {gameMode === "timed" && (
+        <TimerBar timeRemaining={timeRemaining} maxTime={60} />
+      )}
+
       <StageDisplay stats={stats} currentStage={currentStage}>
         <ScoreDisplay score={stats.score} />
       </StageDisplay>
@@ -230,6 +350,9 @@ function App({ length }) {
       )}
       {showTooltip && (
         <FeatureTooltip feature={showTooltip} onClose={handleTooltipClose} />
+      )}
+      {showGameOver && (
+        <GameOverScreen stats={stats} onContinue={handleGameOverContinue} />
       )}
     </div>
   );
