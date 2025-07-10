@@ -1,9 +1,4 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App length={8} />
-  </StrictMode>,
-)
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.tsx";
+createRoot(document.getElementById("root")!).render(<App length={8} />);

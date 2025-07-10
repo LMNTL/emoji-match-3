@@ -5,16 +5,19 @@ import "./GameOverScreen.css";
 interface GameOverScreenProps {
   stats: GameStats;
   onContinue: () => void;
+  onRestart: () => void;
 }
 
 const GameOverScreen: React.FC<GameOverScreenProps> = ({
   stats,
   onContinue,
+  onRestart,
 }) => {
   return (
     <div className="game-over-overlay">
       <div className="game-over-content">
-        <h2>Time's Up!</h2>
+        <h2>Game Over</h2>
+        <h3>Time's Up!</h3>
         <div className="final-stats">
           <div className="stat-item">
             <span className="stat-label">Final Score:</span>
@@ -25,9 +28,14 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({
             <span className="stat-value">{stats.matches}</span>
           </div>
         </div>
-        <button className="continue-button" onClick={onContinue}>
-          Back to Menu
-        </button>
+        <div className="continue">
+          <button className="continue-button" onClick={onContinue}>
+            Back to Menu
+          </button>
+          <button className="continue-button" onClick={onRestart}>
+            Restart
+          </button>
+        </div>
       </div>
     </div>
   );

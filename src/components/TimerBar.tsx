@@ -8,8 +8,8 @@ interface TimerBarProps {
 
 const TimerBar: React.FC<TimerBarProps> = ({ timeRemaining, maxTime }) => {
   const percentage = (timeRemaining / maxTime) * 100;
-  const isLow = percentage < 25;
-  const isCritical = percentage < 10;
+  const isLow = percentage < 40;
+  const isCritical = percentage < 25;
 
   return (
     <div className="timer-container">
@@ -17,7 +17,7 @@ const TimerBar: React.FC<TimerBarProps> = ({ timeRemaining, maxTime }) => {
       <div className="timer-bar-background">
         <div
           className={`timer-bar-fill ${isLow ? "low" : ""} ${isCritical ? "critical" : ""}`}
-          style={{ width: `${percentage}%` }}
+          style={{ height: `${percentage}%` }}
         />
       </div>
     </div>

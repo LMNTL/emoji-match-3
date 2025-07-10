@@ -19,6 +19,8 @@ import TimerBar from "./components/TimerBar";
 
 const isDev = import.meta.env.MODE === "development";
 
+const MAX_TIME = 30;
+
 type GameMode = "title" | "casual" | "timed" | "highscores";
 
 function App({ length }) {
@@ -40,10 +42,12 @@ function App({ length }) {
   const [currentStage, setCurrentStage] = useState(
     StageManager.getCurrentStage(0),
   );
-  const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds initial time
+  const [timeRemaining, setTimeRemaining] = useState(MAX_TIME);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const workerRef = useRef(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const firstMountRef = useRef(true);
 
   const handleEsc = (event) => {
     if (event.key === "Escape") {
@@ -60,6 +64,18 @@ function App({ length }) {
     }
   };
 
+  useEffect(() => {
+    if (gameMode === "title") {
+      if (firstMountRef.current) {
+        firstMountRef.current = false;
+      } else {
+        // Play title music when component mounts
+        const titleMusicEvent = new SoundEvent(SoundType.TITLE_MUSIC);
+        window.dispatchEvent(titleMusicEvent);
+      }
+    }
+  }, [gameMode]);
+
   // Handle escape key
   useEffect(() => {
     window.addEventListener("keydown", handleEsc);
@@ -73,6 +89,7 @@ function App({ length }) {
   useEffect(() => {
     if (
       gameMode === "timed" &&
+      !isTimerPaused &&
       !isGridBlocked &&
       !showVictory &&
       !showStats &&
@@ -82,6 +99,9 @@ function App({ length }) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
+            // Play game over sound
+            const gameOverEvent = new SoundEvent(SoundType.GAME_OVER);
+            window.dispatchEvent(gameOverEvent);
             setShowGameOver(true);
             setIsGridBlocked(true);
             return 0;
@@ -103,6 +123,7 @@ function App({ length }) {
     };
   }, [
     gameMode,
+    isTimerPaused,
     isGridBlocked,
     showVictory,
     showStats,
@@ -129,34 +150,35 @@ function App({ length }) {
     }
   }, [stats.score, showStats, showVictory, isGridBlocked]);
 
+  const unlockFeature = (type) => {
+    // Play feature unlock sound
+    const featureUnlockEvent = new SoundEvent(SoundType.FEATURE_UNLOCK);
+    window.dispatchEvent(featureUnlockEvent);
+    setShowTooltip(type);
+    setIsGridBlocked(true);
+    setSeenFeatures((prev) => new Set(prev).add(type));
+  };
+
   useEffect(() => {
     // Show tooltip *after* victory/stats screens
     if (showVictory || showStats) {
       return;
     }
     if (currentStage.stage >= 3 && !seenFeatures.has("wildcards")) {
-      setShowTooltip("wildcards");
-      setIsGridBlocked(true);
-      setSeenFeatures((prev) => new Set(prev).add("wildcards"));
+      unlockFeature("wildcards");
     } else if (currentStage.stage >= 6 && !seenFeatures.has("rockets")) {
-      setShowTooltip("rockets");
-      setIsGridBlocked(true);
-      setSeenFeatures((prev) => new Set(prev).add("rockets"));
+      unlockFeature("rockets");
     } else if (currentStage.stage >= 9 && !seenFeatures.has("rocks")) {
-      setShowTooltip("rocks");
-      setIsGridBlocked(true);
-      setSeenFeatures((prev) => new Set(prev).add("rocks"));
+      unlockFeature("rocks");
     }
   }, [currentStage.stage, showVictory, showStats, seenFeatures]);
 
   useEffect(() => {
-    if (gameMode !== "title") {
-      generateNonmatchingGridAsync();
-    }
+    generateNonmatchingGridAsync();
     return () => {
       workerRef.current?.terminate();
     };
-  }, [currentStage.stage, gameMode]); // Regenerate grid when stage changes or mode changes
+  }, [currentStage.stage]); // Regenerate grid when stage changes or mode changes
 
   const generateNonmatchingGridAsync = async () => {
     setIsLoading(true);
@@ -217,8 +239,8 @@ function App({ length }) {
 
     // In timed mode, add time bonus for matches
     if (gameMode === "timed") {
-      const timeBonus = Math.min(5, Math.floor(addedScore / 50)); // Up to 5 seconds bonus
-      setTimeRemaining((prev) => Math.min(60, prev + timeBonus)); // Cap at 60 seconds
+      const timeBonus = Math.min(5, Math.ceil(addedScore / 50)); // Up to 5 seconds bonus
+      setTimeRemaining((prev) => Math.min(MAX_TIME, prev + timeBonus)); // Cap at 60 seconds
     }
   };
 
@@ -247,6 +269,12 @@ function App({ length }) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+  };
+
+  const restartGame = () => {
+    generateNonmatchingGridAsync();
+    setShowGameOver(false);
+    setTimeRemaining(MAX_TIME);
   };
 
   const clearSelection = () => {
@@ -311,10 +339,16 @@ function App({ length }) {
       onClick={clearSelection}
     >
       <SoundSystem />
-      {isDev && <DebugTools addScore={addScore} stats={stats} />}
+      {isDev && (
+        <DebugTools
+          addScore={addScore}
+          toggleTimerPause={() => setIsTimerPaused(!isTimerPaused)}
+          stats={stats}
+        />
+      )}
 
       {gameMode === "timed" && (
-        <TimerBar timeRemaining={timeRemaining} maxTime={60} />
+        <TimerBar timeRemaining={timeRemaining} maxTime={MAX_TIME} />
       )}
 
       <StageDisplay stats={stats} currentStage={currentStage}>
@@ -352,7 +386,11 @@ function App({ length }) {
         <FeatureTooltip feature={showTooltip} onClose={handleTooltipClose} />
       )}
       {showGameOver && (
-        <GameOverScreen stats={stats} onContinue={handleGameOverContinue} />
+        <GameOverScreen
+          stats={stats}
+          onContinue={handleGameOverContinue}
+          onRestart={restartGame}
+        />
       )}
     </div>
   );

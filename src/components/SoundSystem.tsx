@@ -29,6 +29,15 @@ export const SoundSystem: React.FC = () => {
       case SoundType.VICTORY:
         playVictorySound();
         break;
+      case SoundType.GAME_OVER:
+        playGameOverSound();
+        break;
+      case SoundType.TITLE_MUSIC:
+        playTitleMusic();
+        break;
+      case SoundType.FEATURE_UNLOCK:
+        playFeatureUnlockSound();
+        break;
       default:
         break;
     }
@@ -110,6 +119,52 @@ export const SoundSystem: React.FC = () => {
     });
   };
 
+  const playGameOverSound = () => {
+    if (isMuted || !audioContextRef.current) return;
+
+    // Sad descending melody
+    const notes = [523.25, 466.16, 415.3, 349.23]; // C5, Bb4, Ab4, F4
+    notes.forEach((frequency, index) => {
+      setTimeout(() => {
+        playChiptuneSound(frequency, 0.6, "triangle");
+      }, index * 200);
+    });
+  };
+
+  const playTitleMusic = () => {
+    if (isMuted || !audioContextRef.current) return;
+
+    // Catchy 8-note melody loop
+    const melody = [
+      { freq: 523.25, duration: 0.3 }, // C5
+      { freq: 659.25, duration: 0.3 }, // E5
+      { freq: 783.99, duration: 0.3 }, // G5
+      { freq: 659.25, duration: 0.3 }, // E5
+      { freq: 698.46, duration: 0.3 }, // F5
+      { freq: 783.99, duration: 0.3 }, // G5
+      { freq: 880.0, duration: 0.6 }, // A5
+      { freq: 783.99, duration: 0.6 }, // G5
+    ];
+
+    melody.forEach((note, index) => {
+      setTimeout(() => {
+        playChiptuneSound(note.freq, note.duration, "square");
+      }, index * 300);
+    });
+  };
+
+  const playFeatureUnlockSound = () => {
+    if (isMuted || !audioContextRef.current) return;
+
+    // 3-note ascending fanfare
+    const notes = [659.25, 783.99, 1046.5]; // E5, G5, C6
+    notes.forEach((frequency, index) => {
+      setTimeout(() => {
+        playChiptuneSound(frequency, 0.4, "triangle");
+      }, index * 100);
+    });
+  };
+
   const toggleMute = () => {
     setIsMuted(!isMuted);
   };
@@ -130,6 +185,9 @@ export enum SoundType {
   MATCH,
   ROCKET,
   VICTORY,
+  GAME_OVER,
+  TITLE_MUSIC,
+  FEATURE_UNLOCK,
 }
 
 export class SoundEvent extends Event {
