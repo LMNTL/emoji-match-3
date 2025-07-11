@@ -251,32 +251,29 @@ describe("Grid", () => {
 
   describe("applyGravity", () => {
     it("should move pieces down when nulls are present", () => {
+      grid.set(1, 0, 1);
+      grid.set(1, 1, null);
+      grid.set(1, 2, 5);
+      grid.set(1, 3, 6);
+      const mockRandom = () => 99;
+
+      const moved = grid.applyGravity(mockRandom);
+      expect(moved).toBe(true);
+      expect(grid.get(1, 0)).toBe(99);
+      expect(grid.get(1, 1)).toBe(1);
+      expect(grid.get(1, 2)).toBe(5);
+      expect(grid.get(1, 3)).toBe(6);
+    });
+
+    it("should generate new values sequentially when randomValueGenerator is provided", () => {
       grid.set(1, 0, null);
       grid.set(1, 1, null);
-      // Column 1: [null, null, 3, 4] should become [null, null, 3, 4]
-      const moved = grid.applyGravity();
-      expect(moved).toBe(false); // No movement needed in this case
-
-      // Better test case
-      grid.set(1, 2, null);
-      grid.set(1, 1, 5);
-
-      const moved2 = grid.applyGravity();
-      expect(moved2).toBe(true);
-      expect(grid.get(1, 2)).toBe(5);
-      expect(grid.get(1, 1)).toBe(null);
-    });
-  });
-
-  describe("applyFullGravity", () => {
-    it("should fill empty cells at the top of the grid with random values", () => {
-      grid.set(1, 1, null);
-      grid.set(2, 2, null);
       const mockRandom = () => 99;
-      grid.applyFullGravity(mockRandom);
 
+      const moved = grid.applyGravity(mockRandom);
+      expect(moved).toBe(true);
       expect(grid.get(1, 0)).toBe(99);
-      expect(grid.get(2, 0)).toBe(99);
+      expect(grid.get(1, 1)).toBe(null);
     });
   });
 

@@ -210,7 +210,7 @@ const GameGrid: React.FC<GameGridProps> = ({
     setToDelete([]);
     setFallingCells(newFallingCells);
 
-    // Apply gravity step by step
+    // Apply gravity step by step with new emoji generation
     let stillMoving = true;
     while (stillMoving) {
       await sleep(200);
@@ -218,7 +218,7 @@ const GameGrid: React.FC<GameGridProps> = ({
       if (stillMoving) {
         const newFallingCells = new Set();
         fallingCells.forEach((cellPos) => {
-          if (currentGrid.isCellMoving(cellPos)) {
+          if (currentGrid.isCellMoving && currentGrid.isCellMoving(cellPos)) {
             newFallingCells.add(cellPos);
           }
         });
@@ -227,21 +227,6 @@ const GameGrid: React.FC<GameGridProps> = ({
       setGrid(currentGrid.clone());
     }
 
-    // Fill empty cells without creating matches - these should fall from above
-    const emptyPositions = [];
-    currentGrid.map((x, y, val) => {
-      if (val === null) {
-        emptyPositions.push(`${x},${y}`);
-      }
-    });
-
-    if (emptyPositions.length > 0) {
-      setFallingCells(new Set(emptyPositions));
-      await sleep(200); // Show falling animation
-    }
-
-    currentGrid.applyFullGravity(randInMap);
-    setGrid(currentGrid.clone());
     setFallingCells(new Set());
 
     // Check for new matches after gravity

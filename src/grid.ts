@@ -206,63 +206,35 @@ export default class Grid {
     return this;
   };
 
-  applyGravity = () => {
+  applyGravity = (randomValueGenerator?) => {
     let moved = false;
 
     // Move cells down column by column
     for (let x = 0; x < this.width; x++) {
-      // Collect all non-null values in this column
-      const nonNullValues = [];
-      for (let y = 0; y < this.length; y++) {
+      let firstNull = null;
+      for (let y = this.length - 1; y >= 0; y--) {
         const val = this.get(x, y);
-        if (val !== null) {
-          nonNullValues.push(val);
+        if (val === null) {
+          firstNull = y;
+          break;
         }
       }
 
-      if (nonNullValues.length === this.length) {
+      if (firstNull === null) {
         continue;
       }
 
-      // Fill column from bottom up with existing values
-      for (let y = this.length - 1; y >= 0; y--) {
-        const newVal = nonNullValues.pop() || null;
-        if (this.get(x, y) !== newVal) {
-          this.set(x, y, newVal);
-          moved = true;
-        }
+      // Move existing values down
+      moved = true;
+      for (let y = firstNull; y > 0; y--) {
+        this.set(x, y, this.get(x, y - 1));
       }
+      // Generate new values for top of grid
+      const firstCell = randomValueGenerator();
+      this.set(x, 0, firstCell);
     }
 
     return moved;
-  };
-
-  applyFullGravity = (randomValueGenerator) => {
-    // First apply gravity to existing pieces
-    this.applyGravity();
-
-    // Then fill empty cells from top, ensuring no matches
-    for (let x = 0; x < this.width; x++) {
-      for (let y = 0; y < this.length; y++) {
-        if (this.get(x, y) === null) {
-          let attempts = 0;
-          let newValue;
-
-          do {
-            newValue = randomValueGenerator();
-            this.set(x, y, newValue);
-            attempts++;
-
-            // Prevent infinite loops
-            if (attempts > 100) {
-              break;
-            }
-          } while (this.wouldCreateMatch(x, y, newValue));
-        }
-      }
-    }
-
-    return this;
   };
 
   // Helper method to check if placing a value would create a match
