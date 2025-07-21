@@ -146,7 +146,7 @@ const TitleScreen: React.FC<TitleScreenProps> = ({ onModeSelect }) => {
         ))}
       </div>
       <div className="title-content">
-        <h1 className="game-title">Match Three</h1>
+        <h1 className="game-title">Emoji Match 🕹️</h1>
         <div className="menu-options">
           <button
             className="menu-button"
