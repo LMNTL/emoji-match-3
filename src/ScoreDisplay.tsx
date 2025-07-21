@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
+import { StageManager } from "./StageManager.tsx";
+import type { StageConfig } from "./types.ts";
+import "./ScoreDisplay.css";
 
 interface ScoreDisplayProps {
   score: number;
+  currentStage: StageConfig;
 }
 
-const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
+const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, currentStage }) => {
   const [displayScore, setDisplayScore] = useState(score);
   const [lastScore, setLastScore] = useState(score);
   const [scoreIncrease, setScoreIncrease] = useState(0);
   const [popups, setPopups] = useState<Record<string, number>>({});
+  const progress = StageManager.getProgress(score, currentStage);
+  const nextStage = StageManager.getNextStage(currentStage.stage);
 
   useEffect(() => {
     setScoreIncrease(score - lastScore);
@@ -67,6 +73,19 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
           +{pop[1]}
         </div>
       ))}
+      <div className="progress-text">
+        {currentStage.targetScore} to Stage {nextStage.stage}
+      </div>
+      {nextStage && (
+        <div className="progress-container">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

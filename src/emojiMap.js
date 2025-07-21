@@ -16,7 +16,7 @@ export const emojiMap = [
   "🚀",
   "🪨", // Rock emoji
 ];
-const WILDCARD_CHANCE = 0.1;
+const WILDCARD_CHANCE = 0.01;
 export const WILDCARD_INDEX = 6;
 const ROCKET_CHANCE = 0.01;
 const ROCK_CHANCE = 0.05;

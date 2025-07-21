@@ -1,22 +1,12 @@
 import React from "react";
-import type { StageConfig, GameStats } from "../types";
-import { StageManager } from "../StageManager";
+import type { StageConfig } from "../types";
 import "./StageDisplay.css";
 
 interface StageDisplayProps {
-  stats: GameStats;
   currentStage: StageConfig;
-  children: React.ReactNode;
 }
 
-const StageDisplay: React.FC<StageDisplayProps> = ({
-  stats,
-  currentStage,
-  children,
-}) => {
-  const progress = StageManager.getProgress(stats.score, currentStage);
-  const nextStage = StageManager.getNextStage(currentStage.stage);
-
+const StageDisplay: React.FC<StageDisplayProps> = ({ currentStage }) => {
   return (
     <div className="stage-display">
       <div className="stage-info">
@@ -25,20 +15,6 @@ const StageDisplay: React.FC<StageDisplayProps> = ({
         </h3>
         <p>{currentStage.description}</p>
       </div>
-      {children}
-      <div className="progress-text">
-        {currentStage.targetScore} to {nextStage.name}
-      </div>
-      {nextStage && (
-        <div className="progress-container">
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

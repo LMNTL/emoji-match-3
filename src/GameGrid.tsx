@@ -62,6 +62,14 @@ const GameGrid: React.FC<GameGridProps> = ({
     [currentStage],
   );
 
+  const comboEmoji = useMemo(() => {
+    if (comboMultiplier > 3) return "🤯";
+    if (comboMultiplier > 2) return "😱";
+    if (comboMultiplier > 1.8) return "😍";
+    if (comboMultiplier > 1.4) return "🌞";
+    return "😀";
+  }, [comboMultiplier]);
+
   const startSwitch = async (x1, y1, x2, y2) => {
     // Check if either cell contains a rock - rocks can't be swapped
     if (isRock(grid.get(x1, y1)) || isRock(grid.get(x2, y2))) {
@@ -450,7 +458,7 @@ const GameGrid: React.FC<GameGridProps> = ({
 
       {comboMultiplier > 1.0 && (
         <div className="combo-indicator" aria-live="polite">
-          {comboMultiplier.toFixed(1)}x COMBO!
+          {comboEmoji} {comboMultiplier.toFixed(1)}x COMBO! {comboEmoji}
         </div>
       )}
 

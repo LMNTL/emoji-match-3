@@ -342,10 +342,8 @@ function App({ length }) {
         <TimerBar timeRemaining={timeRemaining} maxTime={MAX_TIME} />
       )}
 
-      <StageDisplay stats={stats} currentStage={currentStage}>
-        <ScoreDisplay score={stats.score} />
-      </StageDisplay>
-
+      <StageDisplay currentStage={currentStage} />
+      <ScoreDisplay score={stats.score} currentStage={currentStage} />
       {isLoading ? (
         <div className="loader" />
       ) : (
