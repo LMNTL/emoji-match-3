@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { SoundEvent, SoundType } from "./SoundSystem";
 import "./TitleScreen.css";
 
 interface TitleScreenProps {

@@ -238,6 +238,7 @@ export default class Grid {
   };
 
   // Helper method to check if placing a value would create a match
+  // @ts-ignore : function currently unused but may be used later
   private wouldCreateMatch = (x: number, y: number, value: number): boolean => {
     // Rockets and rocks never create matches
     if (isRocket(value) || isRock(value)) {
